@@ -119,6 +119,7 @@ final class GtvHome {
     private boolean headerHidden;
     private int headerShift;
     private static final int HEADER_MS = 200;
+    private static final int FOLDED_ROW_TOP_DP = 26;
     private int loadSequence;
     private int focusToken;
     private boolean released;
@@ -218,8 +219,12 @@ final class GtvHome {
     private void syncHeaderSpace() {
         if (header == null || released) return;
         ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) headerWrap.getLayoutParams();
-        int shift = header.getHeight() + lp.topMargin;
         if (header.getHeight() <= 0) return;
+        // Folded, the wrapper reaches the screen's top edge (y=0): it moves up by the header, its margin and the
+        // root's top padding, and grows by the same amount at the bottom. The list then draws under the old header
+        // area and the previous row scrolls off the physical edge instead of being cut at an inner line.
+        int topInset = headerWrap.getParent() instanceof View ? ((View) headerWrap.getParent()).getPaddingTop() : 0;
+        int shift = header.getHeight() + lp.topMargin + topInset;
         headerShift = shift;
         if (lp.bottomMargin != -shift) {
             lp.bottomMargin = -shift;
@@ -781,9 +786,10 @@ final class GtvHome {
      * goes to the top of the list; without the folding header it stays under the apps row, no lower than a third down.
      */
     private int focusLine() {
-        // Folded header: the row's top sits on the list's top edge (the wrapper clips there, so the row above is gone
-        // and the focused row's title lands about 40dp from the top of the screen).
-        if (header != null) return 0;
+        // Folded header: the wrapper starts at the screen's top edge (y=0); the focused row's top sits
+        // FOLDED_ROW_TOP_DP below it, so its title lands about 40dp from the top, and the row above is still drawn
+        // in that strip and scrolls off the screen edge.
+        if (header != null) return Math.round(FOLDED_ROW_TOP_DP * density);
         int third = home.getHeight() / 3;
         return appsRowHeight > 0 ? Math.min(third, home.getPaddingTop() + appsRowHeight) : third;
     }
@@ -860,7 +866,7 @@ final class GtvHome {
         RowHolder holder = rowHolder(r);
         if (holder != null && focusNearest(holder.list, x)) return;
         home.stopScroll();
-        homeLayout.scrollToPositionWithOffset(r + 1, focusLine());
+        homeLayout.scrollToPositionWithOffset(r + 1, focusLine() - home.getPaddingTop());
         afterLayout(() -> {
             RowHolder again = rowHolder(r);
             if (again != null) focusNearest(again.list, x);
@@ -871,7 +877,7 @@ final class GtvHome {
         RowHolder holder = rowHolder(r);
         if (holder == null) {
             home.stopScroll();
-            homeLayout.scrollToPositionWithOffset(r + 1, focusLine());
+            homeLayout.scrollToPositionWithOffset(r + 1, focusLine() - home.getPaddingTop());
             afterLayout(() -> {
                 RowHolder again = rowHolder(r);
                 if (again != null) focusAt(again.list, again.programs.positionOf(id));
