@@ -893,6 +893,31 @@ final class GtvHome {
         }
     }
 
+    /**
+     * The focused app's name grows with its icon, on the same animation, and drops by the circle's growth
+     * below its centre so the bigger text never touches the ring.
+     */
+    private void labelOnFocus(AppHolder h, boolean focused) {
+        TextView label = h.label;
+        label.setPivotX(label.getWidth() / 2f);
+        label.setPivotY(0f);
+        float to = focused ? APP_FOCUS_SCALE : 1f;
+        float dy = focused ? labelDrop(h) : 0f;
+        label.animate().cancel();
+        if (animations) {
+            label.animate().scaleX(to).scaleY(to).translationY(dy).setDuration(focusMs).start();
+        } else {
+            label.setScaleX(to);
+            label.setScaleY(to);
+            label.setTranslationY(dy);
+        }
+    }
+
+    /** How far the circle's bottom edge moves down when it scales up about its centre. */
+    private float labelDrop(AppHolder h) {
+        return h.circle.getHeight() * (APP_FOCUS_SCALE - 1f) / 2f;
+    }
+
     /** A sideways list that scrolls just enough to keep the focused item inside its side padding. */
     private LinearLayoutManager sidewaysLayout() {
         LinearLayoutManager layout = new LinearLayoutManager(activity, RecyclerView.HORIZONTAL, false) {
@@ -996,6 +1021,10 @@ final class GtvHome {
             float scale = holder.itemView.isFocused() ? APP_FOCUS_SCALE : 1f;
             holder.circle.setScaleX(scale);
             holder.circle.setScaleY(scale);
+            holder.label.animate().cancel();
+            holder.label.setScaleX(scale);
+            holder.label.setScaleY(scale);
+            holder.label.setTranslationY(holder.itemView.isFocused() ? labelDrop(holder) : 0f);
         }
     }
 
@@ -1020,6 +1049,7 @@ final class GtvHome {
             });
             v.setOnFocusChangeListener((view, focused) -> {
                 scaleOnFocus(circle, focused, APP_FOCUS_SCALE);
+                labelOnFocus(this, focused);
                 App app = app();
                 if (focused && app != null) {
                     lastAppPkg = app.pkg;
