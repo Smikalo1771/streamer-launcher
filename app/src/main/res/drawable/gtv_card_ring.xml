@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- gtv_home: the focused programme card's white ring, and the reorder blue on every card of a row being moved. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <stroke android:width="3dp" android:color="#FFFFFFFF" />
+            <corners android:radius="10dp" />
+        </shape>
+    </item>
+    <item android:state_activated="true">
+        <shape android:shape="rectangle">
+            <stroke android:width="3dp" android:color="#FF6EC1FF" />
+            <corners android:radius="10dp" />
+        </shape>
+    </item>
+    <item android:drawable="@android:color/transparent" />
+</selector>

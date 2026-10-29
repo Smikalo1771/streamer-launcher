@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ImageLoader: the view tag that holds a view's current request. -->
+    <item name="image_request" type="id" />
+</resources>

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- gtv_home: one round app in the apps row (GtvHome). The item takes focus; the ring and the name follow its
+     state, and GtvHome scales the circle. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:gravity="center_horizontal"
+    android:paddingStart="4dp"
+    android:paddingEnd="4dp"
+    android:paddingTop="4dp"
+    android:paddingBottom="2dp"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:focusable="true"
+    android:clickable="true"
+    android:defaultFocusHighlightEnabled="false">
+
+    <!-- The ring hugs the 72dp icon with a 2dp gap and is only there while focused (or being moved). -->
+    <FrameLayout
+        android:id="@+id/gtvCircle"
+        android:layout_width="82dp"
+        android:layout_height="82dp"
+        android:foreground="@drawable/gtv_app_ring"
+        android:duplicateParentState="true">
+
+        <ImageView
+            android:id="@+id/gtvIcon"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:layout_gravity="center"
+            android:scaleType="fitXY"
+            android:contentDescription="@null" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/gtvLabel"
+        android:layout_width="80dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:gravity="center"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:textSize="12sp"
+        android:textColor="@color/gtv_app_label"
+        android:fontFamily="@string/font_medium"
+        android:duplicateParentState="true" />
+</LinearLayout>
