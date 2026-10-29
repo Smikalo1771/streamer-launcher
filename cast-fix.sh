@@ -2,6 +2,8 @@
 # Restore the Cast receiver's factory credentials after a reboot.
 # The credentials live in a provider inside setupwraith, which stays disabled so its RecoveryActivity
 # cannot claim Home; they survive only in the receiver's process, so this runs again after every reboot.
+# Normally not needed: a MacroDroid macro ("Cast after boot", Device Boot trigger, Shell Script over
+# Shizuku) runs the same steps on the TV about 45 s after every boot. Use this when that macro is off.
 # Usage: TV=<ip>:5555 ./cast-fix.sh
 set -euo pipefail
 TV=${TV:?set TV=<ip>:5555}
