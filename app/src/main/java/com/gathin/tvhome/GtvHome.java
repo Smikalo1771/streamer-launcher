@@ -1,6 +1,7 @@
 package com.gathin.tvhome;
 
 import android.annotation.SuppressLint;
+import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -8,6 +9,7 @@ import android.content.pm.ResolveInfo;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
+import android.util.Log;
 import android.os.Looper;
 import android.os.Parcelable;
 import android.view.KeyEvent;
@@ -47,6 +49,7 @@ final class GtvHome {
     private static final int CARD_HEIGHT_DP = 150;
     /** The app icon's diameter in the apps row (item_gtv_app.xml gtvIcon). */
     private static final int APP_ICON_DP = 72;
+    private static final String TAG = "TvHome.GtvHome";
     private static final float APP_FOCUS_SCALE = 1.1f, CARD_FOCUS_SCALE = 1.08f;
     private static final float MIN_ASPECT = 0.6f, MAX_ASPECT = 2f, DEFAULT_ASPECT = 16f / 9f;
     /** The blue MainActivity's reorder mode uses, here for the title of a row being moved. */
@@ -266,6 +269,38 @@ final class GtvHome {
             return;
         }
         focusApp(at);
+    }
+
+    /**
+     * Back with nothing left to close, like the stock launcher: from a content row it returns to the apps row;
+     * from the apps row or the top bar it starts the screensaver the TV has chosen.
+     */
+    void onBack() {
+        View focus = activity.getCurrentFocus();
+        RecyclerView.ViewHolder holder = focus != null && focus != home ? home.findContainingViewHolder(focus) : null;
+        if (holder != null && holder.getBindingAdapterPosition() > 0) {
+            setHeaderHidden(false);
+            focusFirst();
+            return;
+        }
+        startScreensaver();
+    }
+
+    /**
+     * Google TV's own "start screensaver now" action, which TV Settings answers by starting the chosen dream
+     * (Ambient mode on the Streamer); an app cannot start a dream itself (WRITE_DREAM_STATE is privileged).
+     * Builds without it fall back to the launcher's clock.
+     */
+    private void startScreensaver() {
+        Intent dream = new Intent("com.google.android.pano.action.SLEEP");
+        if (activity.getPackageManager().resolveActivity(dream, 0) == null) {
+            dream = new Intent(activity, ClockActivity.class);
+        }
+        try {
+            activity.startActivity(dream);
+        } catch (ActivityNotFoundException | SecurityException e) {
+            Log.w(TAG, "screensaver not started", e);
+        }
     }
 
     /** Home pressed: back to the top and the first app, like the stock launcher. */

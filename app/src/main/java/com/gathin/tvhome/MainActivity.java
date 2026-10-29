@@ -1708,7 +1708,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     @Override
     public void onBackPressed() {
-        // Home screen: Back goes nowhere.
+        // Home screen: Back goes nowhere, except in gtv_home, where it behaves like the stock Google TV home.
+        if (gtvHome != null) gtvHome.onBack();
     }
 
     // ---- glass highlight -------------------------------------------------------------------------
