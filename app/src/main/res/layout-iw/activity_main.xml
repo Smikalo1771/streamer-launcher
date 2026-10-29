@@ -398,10 +398,11 @@
         </RelativeLayout>
 
         <!-- The wrapper clips at the grid's edge; the grid itself must not clip so scaled tiles can overflow their cells. -->
+        <!-- match_parent, not a weight: LinearLayout ignores a negative bottom margin on a weighted child, so GtvHome's
+             -shift margin (which lets the list reach the screen bottom once the top bar folds away) never grew it. -->
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
+            android:layout_height="match_parent"
             android:layout_marginTop="10dp">
 
             <androidx.recyclerview.widget.RecyclerView

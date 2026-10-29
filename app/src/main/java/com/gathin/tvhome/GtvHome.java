@@ -746,7 +746,9 @@ final class GtvHome {
      * goes to the top of the list; without the folding header it stays under the apps row, no lower than a third down.
      */
     private int focusLine() {
-        if (header != null) return home.getPaddingTop();
+        // Folded header: the row's top sits on the list's top edge (the wrapper clips there, so the row above is gone
+        // and the focused row's title lands about 40dp from the top of the screen).
+        if (header != null) return 0;
         int third = home.getHeight() / 3;
         return appsRowHeight > 0 ? Math.min(third, home.getPaddingTop() + appsRowHeight) : third;
     }
