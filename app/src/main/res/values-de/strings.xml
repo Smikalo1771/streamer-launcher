@@ -61,6 +61,9 @@
     <string name="library_remove_shortcut">Vom Startbildschirm entfernen</string>
     <string name="library_open">Öffnen</string>
     <string name="library_app_info">App-Info</string>
+    <string name="stop_app">App beenden</string>
+    <string name="app_stopped">%1$s beendet</string>
+    <string name="app_force_stop_hint">Zum Beenden von %1$s „Beenden erzwingen“ wählen</string>
     <string name="library_save_failed">Verknüpfung konnte nicht gespeichert werden</string>
     <string name="library_recent">Neu · Zum Startbildschirm</string>
     <string name="library_hint_add">Drücken: zu Start hinzufügen · Halten: Optionen</string>

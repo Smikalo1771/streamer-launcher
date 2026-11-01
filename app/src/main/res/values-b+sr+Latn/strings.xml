@@ -65,6 +65,9 @@
     <string name="library_remove_shortcut">Ukloni sa početnog ekrana</string>
     <string name="library_open">Otvori</string>
     <string name="library_app_info">Informacije o aplikaciji</string>
+    <string name="stop_app">Zaustavi aplikaciju</string>
+    <string name="app_stopped">Aplikacija %1$s je zaustavljena</string>
+    <string name="app_force_stop_hint">Da biste zaustavili %1$s, izaberite Prinudno zaustavi</string>
     <string name="library_save_failed">Prečica nije sačuvana</string>
     <string name="library_recent">Novo · Dodaj na početni ekran</string>
     <string name="library_hint_add">Pritisni za početni ekran · Zadrži za opcije</string>

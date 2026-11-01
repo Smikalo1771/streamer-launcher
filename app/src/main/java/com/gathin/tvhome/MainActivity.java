@@ -3608,6 +3608,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (LibraryApps.save(this, pkg, false)) reloadApps(false);
             else Toast.makeText(this, R.string.library_save_failed, Toast.LENGTH_LONG).show();
         }));
+        String label = adapter.labelAt(position);
+        entries.add(new MenuEntry(getText(R.string.stop_app), () -> AppStopper.stop(this, pkg, label)));
         // Some firmware has no App info page at all; a row that only toasts "can't open" helps nobody.
         Intent info = SystemSettings.appInfo(this, pkg);
         if (info != null) entries.add(new MenuEntry(getText(R.string.library_app_info), () -> open(info)));

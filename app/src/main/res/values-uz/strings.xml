@@ -94,6 +94,9 @@
     <string name="library_remove_shortcut">Bosh ekrandan olib tashlash</string>
     <string name="library_open">Ochish</string>
     <string name="library_app_info">Ilova haqida</string>
+    <string name="stop_app">Ilovani toʻxtatish</string>
+    <string name="app_stopped">%1$s toʻxtatildi</string>
+    <string name="app_force_stop_hint">%1$s ilovasini toʻxtatish uchun Majburan toʻxtatish tugmasini bosing</string>
     <string name="library_save_failed">Yorliq saqlanmadi</string>
     <string name="library_recent">Yangi · Bosh ekranga qoʻshish</string>
     <string name="library_hint_add">Qoʻshish uchun bosing · Variantlar uchun bosib turing</string>

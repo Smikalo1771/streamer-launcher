@@ -84,6 +84,9 @@
     <string name="library_remove_shortcut">إزالة من الرئيسية</string>
     <string name="library_open">فتح</string>
     <string name="library_app_info">معلومات التطبيق</string>
+    <string name="stop_app">إيقاف التطبيق</string>
+    <string name="app_stopped">تم إيقاف %1$s</string>
+    <string name="app_force_stop_hint">لإيقاف %1$s، اختر «فرض الإيقاف»</string>
     <string name="library_save_failed">تعذر حفظ الاختصار</string>
     <string name="library_recent">جديد · إضافة إلى الرئيسية</string>
     <string name="library_hint_add">اضغط للإضافة للرئيسية · اضغط مطولاً للخيارات</string>

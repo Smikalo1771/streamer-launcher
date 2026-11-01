@@ -94,6 +94,9 @@
     <string name="library_remove_shortcut">Verwijderen van Home</string>
     <string name="library_open">Openen</string>
     <string name="library_app_info">App-info</string>
+    <string name="stop_app">App stoppen</string>
+    <string name="app_stopped">%1$s gestopt</string>
+    <string name="app_force_stop_hint">Kies Gedwongen stoppen om %1$s te stoppen</string>
     <string name="library_save_failed">Kon de snelkoppeling niet opslaan</string>
     <string name="library_recent">Nieuw · Toevoegen aan Home</string>
     <string name="library_hint_add">Druk om toe te voegen aan Home · Houd ingedrukt voor opties</string>

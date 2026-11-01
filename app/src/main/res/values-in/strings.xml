@@ -93,6 +93,9 @@
     <string name="library_remove_shortcut">Hapus dari Beranda</string>
     <string name="library_open">Buka</string>
     <string name="library_app_info">Info aplikasi</string>
+    <string name="stop_app">Hentikan aplikasi</string>
+    <string name="app_stopped">%1$s dihentikan</string>
+    <string name="app_force_stop_hint">Untuk menghentikan %1$s, pilih Paksa berhenti</string>
     <string name="library_save_failed">Tidak dapat menyimpan pintasan</string>
     <string name="library_recent">Baru · Tambah ke Beranda</string>
     <string name="library_hint_add">Tekan untuk tambah ke Beranda · Tahan untuk opsi</string>

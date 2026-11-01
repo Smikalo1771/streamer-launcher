@@ -83,6 +83,9 @@
     <string name="library_remove_shortcut">Poista kotinäkymästä</string>
     <string name="library_open">Avaa</string>
     <string name="library_app_info">Sovelluksen tiedot</string>
+    <string name="stop_app">Pysäytä sovellus</string>
+    <string name="app_stopped">%1$s pysäytettiin</string>
+    <string name="app_force_stop_hint">Pysäytä %1$s valitsemalla Pakota lopetus</string>
     <string name="library_save_failed">Pikakuvaketta ei voitu tallentaa</string>
     <string name="library_recent">Uusi · Lisää kotinäkymään</string>
     <string name="library_hint_add">Lisää kotinäkymään painamalla · Pidä pohjassa: valinnat</string>

@@ -570,6 +570,9 @@ final class GtvHome {
             prefs.setAppRowsHidden(app.pkg, label, !rowsHidden);
             saveAndApply();
         }));
+        if (AppStopper.canStop(activity, app.pkg)) {
+            entries.add(entry(R.string.stop_app, () -> AppStopper.stop(activity, app.pkg, label)));
+        }
         // Some firmware has no App info page at all; a row that only toasts "can't open" helps nobody.
         Intent info = SystemSettings.appInfo(activity, app.pkg);
         if (info != null) entries.add(entry(R.string.library_app_info, () -> activity.open(info)));

@@ -539,6 +539,10 @@ final class AppLibraryDialog {
         boolean home = onHome.test(pkg);
         addAction(rows, home ? R.string.library_remove_shortcut : R.string.library_add_home,
                 () -> changeHome(app, !home));
+        if (AppStopper.canStop(activity, pkg)) addAction(rows, R.string.stop_app, () -> {
+            dismissActions();
+            AppStopper.stop(activity, pkg, label(app));
+        });
         Intent info = SystemSettings.appInfo(activity, pkg);
         if (info != null) addAction(rows, R.string.library_app_info, () -> {
             close();

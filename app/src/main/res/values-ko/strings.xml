@@ -110,6 +110,9 @@
     <string name="library_remove_shortcut">홈에서 삭제</string>
     <string name="library_open">열기</string>
     <string name="library_app_info">앱 정보</string>
+    <string name="stop_app">앱 중지</string>
+    <string name="app_stopped">%1$s 중지됨</string>
+    <string name="app_force_stop_hint">%1$s을(를) 중지하려면 강제 중지를 선택하세요</string>
     <string name="library_save_failed">바로가기를 저장할 수 없음</string>
     <string name="library_recent">새 앱 · 홈에 추가</string>
     <string name="library_hint_add">짧게 눌러 홈에 추가 · 길게 눌러 옵션 열기</string>

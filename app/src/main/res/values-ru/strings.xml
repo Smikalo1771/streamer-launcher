@@ -111,6 +111,9 @@
     <string name="library_remove_shortcut">Убрать с главного экрана</string>
     <string name="library_open">Открыть</string>
     <string name="library_app_info">О приложении</string>
+    <string name="stop_app">Остановить приложение</string>
+    <string name="app_stopped">Приложение %1$s остановлено</string>
+    <string name="app_force_stop_hint">Чтобы остановить %1$s, нажмите «Остановить»</string>
     <string name="library_save_failed">Не удалось сохранить ярлык</string>
     <string name="library_recent">Новое · Добавить на главный экран</string>
     <string name="library_hint_add">Нажать: добавить на главный экран · Удержать: опции</string>

@@ -11,4 +11,7 @@
     <string name="dock_edit_pick_place">Escolha o lugar da dock para esta app e prima OK. Voltar para cancelar.</string>
     <string name="more_inputs">Mais entradas</string>
     <string name="game_live">Em direto</string>
+    <string name="stop_app">Parar a app</string>
+    <string name="app_stopped">App parada: %1$s</string>
+    <string name="app_force_stop_hint">Para parar %1$s, escolha Forçar paragem</string>
 </resources>

@@ -97,6 +97,9 @@
     <string name="library_remove_shortcut">Bỏ khỏi màn hình chính</string>
     <string name="library_open">Mở</string>
     <string name="library_app_info">Thông tin ứng dụng</string>
+    <string name="stop_app">Dừng ứng dụng</string>
+    <string name="app_stopped">Đã dừng %1$s</string>
+    <string name="app_force_stop_hint">Để dừng %1$s, hãy chọn Buộc dừng</string>
     <string name="library_save_failed">Không lưu được lối tắt</string>
     <string name="library_recent">Mới · Thêm vào màn hình chính</string>
     <string name="library_hint_add">Bấm để thêm vào màn hình chính · Giữ để xem tùy chọn</string>

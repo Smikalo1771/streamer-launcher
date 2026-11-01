@@ -96,6 +96,9 @@
     <string name="library_remove_shortcut">Odebrat z domovské obrazovky</string>
     <string name="library_open">Otevřít</string>
     <string name="library_app_info">Informace o aplikaci</string>
+    <string name="stop_app">Zastavit aplikaci</string>
+    <string name="app_stopped">Aplikace %1$s byla zastavena</string>
+    <string name="app_force_stop_hint">Aplikaci %1$s zastavíte volbou Vynutit ukončení</string>
     <string name="library_save_failed">Zástupce se nepodařilo uložit</string>
     <string name="library_recent">Nová · Přidat na domovskou obrazovku</string>
     <string name="library_hint_add">Stiskem přidáte na domovskou obrazovku · Podržením volby</string>
