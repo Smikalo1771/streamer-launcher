@@ -212,8 +212,8 @@
          to omit. -->
     <string-array name="app_keys" translatable="false">
         <item>190:com.google.android.youtube.tv</item>
-        <item>191:com.example.iptvplayer</item>
-        <item>313:com.nuvio.tv</item>
+        <item>191:com.nuvio.tv</item>
+        <item>313:com.example.iptvplayer</item>
     </string-array>
 
     <!-- Package of the stock launcher, for TVs whose firmware turns it back on after it was disabled. XGIMI's
