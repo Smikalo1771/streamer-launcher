@@ -307,8 +307,9 @@
          button's long-press menu, so it needs no extra button on screen. -->
     <bool name="reorder_button">false</bool>
     <!-- Wi-Fi and Settings as round icon-only buttons (the network name moves to the talkback description);
-         Inputs keeps its label. -->
-    <bool name="icon_only_buttons">false</bool>
+         Inputs keeps its label. Without vpn_pill, the VPN state becomes a small lock badge on the network icon
+         (VpnIconBadge): green while a VPN is up, red while vpn_app is installed and no VPN is. -->
+    <bool name="icon_only_buttons">true</bool>
     <!-- The Inputs pill as a round icon button too (the label moves to the talkback description). -->
     <bool name="icon_only_inputs">false</bool>
     <!-- With vpn_pill, the VPN pill as a round icon button too: an open lock on the plain glass button while no VPN is

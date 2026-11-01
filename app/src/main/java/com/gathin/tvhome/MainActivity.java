@@ -187,6 +187,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private TextView btnWifi;
     /** The network pill's icon as last set, so a refresh that changes nothing does not lay the top bar out again. */
     private int wifiIcon;
+    /** The VpnIconBadge on the round network button: 0 none, 1 VPN up, 2 VPN off. */
+    private int wifiVpnBadge;
     /** The pills have been filled in once; later resumes refresh them after the first frame. */
     private boolean pillsShown;
     private TextView shamsiDate;
@@ -2908,9 +2910,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             diya.setSteady(steady);
             diya.setFlame(flame);
         } else {
-            if (icon != wifiIcon) {
+            // The round icon-only button has no room for the VPN capsule: a badge on the icon's corner instead.
+            int badge = wifiIconOnly && !vpnPill ? (vpn ? 1 : vpnDown ? 2 : 0) : 0;
+            if (icon != wifiIcon || badge != wifiVpnBadge) {
                 wifiIcon = icon;
-                btnWifi.setCompoundDrawablesRelativeWithIntrinsicBounds(icon, 0, 0, 0);
+                wifiVpnBadge = badge;
+                Drawable d = getDrawable(icon);
+                if (badge != 0) {
+                    d = new VpnIconBadge(d, getDrawable(badge == 1 ? R.drawable.ic_lock : R.drawable.ic_lock_open),
+                            badge == 1, density);
+                }
+                btnWifi.setCompoundDrawablesRelativeWithIntrinsicBounds(d, null, null, null);
             }
             ColorStateList tint = online ? wifiOnlineTint : wifiPlainTint;
             // wifi_status_warnings: orange while connected but not validated (a captive portal), red while offline.
