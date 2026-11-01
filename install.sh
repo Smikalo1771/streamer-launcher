@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Build and install this launcher on the Google TV Streamer, keeping the stock launcher (launcherx) and
-# setupwraith enabled so casting keeps working. Home is taken over by HomeKeyService + stock_home_redirect.
+# Build and install this launcher on the Google TV Streamer and turn on HomeKeyService (remote's app buttons,
+# and Home while the stock launcher is still enabled). The full setup, debloat and casting fix: SETUP.md.
 #
 # Usage:   TV=192.168.1.50:5555 ./install.sh            build + install
 #          SKIP_BUILD=1 TV=... ./install.sh                install the APK already built
