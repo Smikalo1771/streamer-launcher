@@ -116,6 +116,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      * time arrives; the clock, date and greeting stay hidden before then.
      */
     private static final long TIME_VALID_AFTER_MS = 1_735_689_600_000L;
+    /**
+     * Android 12+ starts such a TV at the firmware's build time instead (ro.build.date.utc; the Google TV Streamer
+     * shows 14 Apr 2026 for its first ~30 s), which passes the date above. A clock this close to the build is
+     * that placeholder: real time on a set in use is days or more past it, as updates ship well after the build.
+     */
+    private static final long BUILD_TIME_MARGIN_MS = 6 * 60 * MINUTE_MS;
+
+    /** True once the clock holds real time: past 2025 and past the build-time placeholder. */
+    static boolean timeValid(long nowMs, long buildTimeMs) {
+        return nowMs >= TIME_VALID_AFTER_MS && (buildTimeMs <= 0 || nowMs >= buildTimeMs + BUILD_TIME_MARGIN_MS);
+    }
     private String liveTvPkg;
     /** Launcher settings' change count this Home was built with (see onResume). */
     private long settingsRevision;
@@ -2614,7 +2625,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private final Runnable clockCheck = this::updateClockVisibility;
 
     private void updateClockVisibility() {
-        boolean valid = System.currentTimeMillis() >= TIME_VALID_AFTER_MS;
+        boolean valid = timeValid(System.currentTimeMillis(), android.os.Build.TIME);
         clockBlock.setVisibility(valid ? View.VISIBLE : View.INVISIBLE);
         handler.removeCallbacks(clockCheck);
         if (valid) {
