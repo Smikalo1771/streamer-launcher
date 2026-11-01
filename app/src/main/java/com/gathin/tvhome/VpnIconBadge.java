@@ -8,7 +8,7 @@ import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
-import android.util.LayoutDirection;
+import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -41,7 +41,7 @@ final class VpnIconBadge extends Drawable {
         icon.draw(canvas);
         Rect b = getBounds();
         float r = 5.5f * density;
-        boolean rtl = getLayoutDirection() == LayoutDirection.RTL;
+        boolean rtl = getLayoutDirection() == View.LAYOUT_DIRECTION_RTL;
         // Centred a little inside the icon's corner, so most of it stays within the button's padding.
         float cx = rtl ? b.left + r - 4 * density : b.right - r + 4 * density;
         float cy = b.bottom - r + 4 * density;
