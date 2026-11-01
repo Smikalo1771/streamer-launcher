@@ -109,7 +109,10 @@ Riadky pre `setupwraith` a `launcherx` sú v súbore zakomentované schválne. T
    adb -s $TV shell cmd package set-home-activity --user 0 com.filip.tvhome/com.gathin.tvhome.MainActivity
    ```
 
-`HomeKeyService` musí zostať zapnutý, inak tlačidlá YouTube, Netflix a hviezdička nebudú robiť nič. Over to:
+`HomeKeyService` musí zostať zapnutý, inak tlačidlá YouTube, Netflix a hviezdička nebudú robiť nič. Android ho
+vypne pri každom vynútenom zastavení launchera (`am force-stop`, Nastavenia > Aplikácie). `install.sh` preto
+launcheru udelí `WRITE_SECURE_SETTINGS` a `restore_key_services` v `config.xml` je zapnuté: pri ďalšom štarte
+Home si launcher službu zapne sám. Over to:
 `adb -s $TV shell settings get secure enabled_accessibility_services` vráti
 `com.filip.tvhome/com.gathin.tvhome.HomeKeyService`.
 

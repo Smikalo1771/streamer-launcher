@@ -34,6 +34,8 @@ $A shell pm install -r /data/local/tmp/tvhome.apk
 $A shell rm /data/local/tmp/tvhome.apk
 $A shell pm grant $PKG android.permission.READ_TV_LISTINGS
 $A shell pm grant $PKG android.permission.ACCESS_FINE_LOCATION 2>/dev/null || true
+# restore_key_services: lets ServiceRepair put HomeKeyService back after a force stop (Android drops it then).
+$A shell pm grant $PKG android.permission.WRITE_SECURE_SETTINGS
 $A shell cmd package compile -m speed -f $PKG >/dev/null
 
 # Android unbinds a service whose APK was replaced; clear the list and write it back so it binds again.
