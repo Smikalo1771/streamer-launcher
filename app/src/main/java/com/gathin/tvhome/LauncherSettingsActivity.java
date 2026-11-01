@@ -44,6 +44,8 @@ public final class LauncherSettingsActivity extends Activity {
     private TextView advancedChoice;
     private TextView followThemeChoice;
     private TextView openOnStartChoice;
+    private TextView netflixButtonChoice;
+    private TextView starButtonChoice;
     private int columns;
     private int rowsBelowDock;
     private int dockOpacity;
@@ -150,6 +152,10 @@ public final class LauncherSettingsActivity extends Activity {
             openOnStartChoice.setVisibility(View.VISIBLE);
             openOnStartChoice.setOnClickListener(v -> showOpenOnStartPicker());
         }
+        netflixButtonChoice = findViewById(R.id.netflixButtonChoice);
+        netflixButtonChoice.setOnClickListener(v -> showButtonPicker(ButtonApps.NETFLIX, R.string.netflix_button_label));
+        starButtonChoice = findViewById(R.id.starButtonChoice);
+        starButtonChoice.setOnClickListener(v -> showButtonPicker(ButtonApps.STAR, R.string.star_button_label));
         followThemeChoice = findViewById(R.id.followThemeChoice);
         followThemeChoice.setOnClickListener(v -> {
             if (!hasOnTvChoices()) return;
@@ -278,7 +284,8 @@ public final class LauncherSettingsActivity extends Activity {
     }
 
     /** Off, then every app with a TV entry point by name. Saved at once; it is read on the next boot. */
-    private void showOpenOnStartPicker() {
+    /** TV apps, sorted by name: {label, package}, without this launcher. */
+    private List<String[]> tvApps() {
         PackageManager pm = getPackageManager();
         List<String[]> apps = new ArrayList<>();
         Intent tv = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER);
@@ -290,6 +297,11 @@ public final class LauncherSettingsActivity extends Activity {
             if (!seen) apps.add(new String[]{r.loadLabel(pm).toString(), pkg});
         }
         Collections.sort(apps, (a, b) -> a[0].compareToIgnoreCase(b[0]));
+        return apps;
+    }
+
+    private void showOpenOnStartPicker() {
+        List<String[]> apps = tvApps();
         String[] labels = new String[apps.size() + 1];
         labels[0] = getString(R.string.off);
         String current = choices.getString(OpenOnStart.KEY, "");
@@ -313,9 +325,43 @@ public final class LauncherSettingsActivity extends Activity {
                 .show();
     }
 
+    /** The app a remote button opens: Off, or one of the TV apps. Takes effect at once (HomeKeyService). */
+    private void showButtonPicker(int keycode, int title) {
+        List<String[]> apps = tvApps();
+        String[] labels = new String[apps.size() + 1];
+        labels[0] = getString(R.string.off);
+        String current = buttonPackage(keycode);
+        int checked = 0;
+        for (int i = 0; i < apps.size(); i++) {
+            labels[i + 1] = apps.get(i)[0];
+            if (apps.get(i)[1].equals(current)) checked = i + 1;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle(title)
+                .setSingleChoiceItems(labels, checked, (dialog, which) -> {
+                    dialog.dismiss();
+                    choices.edit().putString(ButtonApps.key(keycode),
+                            which == 0 ? ButtonApps.NONE : apps.get(which - 1)[1]).apply();
+                    HomeKeyService.reloadConfig();
+                    refresh();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    /** The package a remote button opens now (Launcher settings over app_keys), or "" for none. */
+    private String buttonPackage(int keycode) {
+        String pkg = RemoteKeys.parseAppKeys(Config.load(this).appKeys).get(keycode);
+        return pkg != null ? pkg : "";
+    }
+
     /** The picked app's name, its package when it is gone, or Off. */
     private String openOnStartLabel() {
-        String pkg = choices.getString(OpenOnStart.KEY, "");
+        return appLabel(choices.getString(OpenOnStart.KEY, ""));
+    }
+
+    /** An app's name, its package when it is gone, or Off for "". */
+    private String appLabel(String pkg) {
         if (pkg.isEmpty()) return getString(R.string.off);
         try {
             PackageManager pm = getPackageManager();
@@ -372,6 +418,8 @@ public final class LauncherSettingsActivity extends Activity {
                         : wallpaperCurrent != null ? wallpaperCurrent
                         : getString(R.string.wallpaper_theme_default)));
         openOnStartChoice.setText(getString(R.string.open_on_start_state, openOnStartLabel()));
+        netflixButtonChoice.setText(getString(R.string.netflix_button_state, appLabel(buttonPackage(ButtonApps.NETFLIX))));
+        starButtonChoice.setText(getString(R.string.star_button_state, appLabel(buttonPackage(ButtonApps.STAR))));
         followThemeChoice.setSelected(!hasOnTvChoices());
     }
 

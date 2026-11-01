@@ -8,7 +8,9 @@ Výsledok:
 - Domovská obrazovka je tento launcher (`com.filip.tvhome`). Pôvodný launcher Google TV (`launcherx`) a sprievodca
   nastavením (`setupwraith`) sú vypnuté, nie odinštalované.
 - Telemetria, Privacy Sandbox a nepotrebné predinštalované appky sú vypnuté (`tv/debloat.txt`).
-- Tlačidlá na ovládači: YouTube otvára YouTube, Netflix otvára IPTV, hviezdička otvára Nuvio.
+- Tlačidlá na ovládači: YouTube otvára YouTube, Netflix a hviezdička otvárajú appky vybrané v nastaveniach
+  launchera (predvolene Nuvio a IPTV).
+- Launcher je po slovensky, česky alebo anglicky podľa jazyka nastaveného na Streameri.
 - Casting z telefónu aj z Chrome funguje. Udržiava ho launcher (`TvGuard`), ktorý cez Shizuku spúšťa
   `tv/tvguard.sh` hneď po štarte a potom každých 10 minút.
 - Šetrič obrazovky naskočí po 2 minútach. Túto hodnotu drží ten istý skript.
@@ -91,7 +93,9 @@ Riadky pre `setupwraith` a `launcherx` sú v súbore zakomentované schválne. T
 ## 5. Launcher
 
 1. V `gradle.properties` nastav `launcherApplicationId` (u nás `com.filip.tvhome`).
-2. V `app/src/main/res/values/config.xml` uprav `app_keys`, teda tlačidlá na ovládači:
+2. V `app/src/main/res/values/config.xml` sú v `app_keys` predvolené appky pre tlačidlá na ovládači. Netflix a
+   hviezdičku si potom každý zmení priamo na TV: podrž OK na ozubenom kolieske > **Launcher settings** >
+   **Netflix button** / **Star button**. Zmena platí hneď.
 
    | kód | tlačidlo | appka |
    |---|---|---|

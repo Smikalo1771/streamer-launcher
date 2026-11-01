@@ -183,6 +183,12 @@ public class HomeKeyService extends AccessibilityService {
         GuardKeep.stepOut(this);
     }
 
+    /** Launcher settings picked another app for a remote button: read app_keys again. Main thread. */
+    static void reloadConfig() {
+        HomeKeyService service = running;
+        if (service != null) service.loadConfig();
+    }
+
     private void loadConfig() {
         // Keycodes and the panel choice can also come from a theme; theme.sh restarts this service.
         Config config = Config.load(this);
