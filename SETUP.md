@@ -8,9 +8,10 @@ Výsledok:
 - Domovská obrazovka je tento launcher (`com.filip.tvhome`). Pôvodný launcher Google TV (`launcherx`) a sprievodca
   nastavením (`setupwraith`) sú vypnuté, nie odinštalované.
 - Telemetria, Privacy Sandbox a nepotrebné predinštalované appky sú vypnuté (`tv/debloat.txt`).
-- Tlačidlá na ovládači: YouTube otvára YouTube, Netflix otvára Nuvio, hviezdička otvára IPTV.
-- Casting z telefónu aj z Chrome funguje. Udržiavajú ho dve makrá v MacroDroide cez Shizuku.
-- Šetrič obrazovky naskočí po 2 minútach. Vlastné makro túto hodnotu drží.
+- Tlačidlá na ovládači: YouTube otvára YouTube, Netflix otvára IPTV, hviezdička otvára Nuvio.
+- Casting z telefónu aj z Chrome funguje. Udržiava ho launcher (`TvGuard`), ktorý cez Shizuku spúšťa
+  `tv/tvguard.sh` hneď po štarte a potom každých 10 minút.
+- Šetrič obrazovky naskočí po 2 minútach. Túto hodnotu drží ten istý skript.
 - Podržanie ikony appky ponúka „Stop app“, ktorá appku cez Shizuku hneď ukončí.
 
 > Všetko sa robí cez ADB. Balíky sa iba vypínajú (`pm disable-user`), takže sa každý krok dá vrátiť (časť 10).
@@ -30,8 +31,10 @@ Na TV:
 
 - Google TV Streamer 4K pripojený do rovnakej siete ako PC
 - APK na nahratie: [Shizuku, fork thedjchi](https://github.com/thedjchi/Shizuku/releases) (overená verzia
-  `13.7.0-thedjchi`) a MacroDroid (overená verzia `6.0.11`, `armeabi-v7a`, z APKMirror; podpis je rovnaký ako
-  v Obchode Play). MacroDroid sa v Obchode Play na TV nedá nájsť.
+  `13.7.0-thedjchi`). MacroDroid už netreba (časť 8).
+
+Na Windowse to ide v Git Bash: `JAVA_HOME` a `ANDROID_HOME` nastav na JDK 17 a SDK, a pred príkazmi s cestami na
+TV (`/data/local/tmp/...`) nastav `export MSYS_NO_PATHCONV=1`, inak ich Git Bash prepíše na cesty Windowsu.
 
 V príkazoch nižšie nahraď IP adresu tou svojou:
 
@@ -128,8 +131,12 @@ A="adb -s $TV shell"
 $A pm disable-user --user 0 com.google.android.tungsten.setupwraith
 $A pm disable-user --user 0 com.google.android.apps.tv.launcherx
 $A cmd package set-home-activity --user 0 com.filip.tvhome/com.gathin.tvhome.MainActivity
+sleep 30
 adb -s $TV reboot
 ```
+
+`sleep 30` nevynechávaj. Android zapisuje stav balíkov na disk s oneskorením a pri okamžitom `reboot` sa vypnutie
+stratí: po štarte sú `launcherx` aj `setupwraith` znova zapnuté.
 
 Po reštarte over:
 
@@ -147,75 +154,61 @@ Chrome potom TV odmietne. Telefón ju niekedy ešte vidí. Riešia to kroky 7 a 
 
 ## 7. Shizuku
 
-Shizuku spúšťa príkazy ako používateľ `shell` bez pripojeného PC. Používajú ho makrá v MacroDroide a voľba
-„Stop app“ v launcheri.
+Shizuku spúšťa príkazy ako používateľ `shell` bez pripojeného PC. Používa ho launcher na `tv/tvguard.sh` a na
+voľbu „Stop app“.
 
 1. Nainštaluj fork thedjchi: `adb -s $TV install shizuku-thedjchi.apk`.
 2. Udeľ mu povolenie, ktoré potrebuje na štart po reštarte:
    `adb -s $TV shell pm grant moe.shizuku.privileged.api android.permission.WRITE_SECURE_SETTINGS`
-3. Prvýkrát ho spusti cez ADB podľa príkazu, ktorý ukáže appka.
+3. Prvýkrát ho spusti cez ADB:
+   ```sh
+   adb -s $TV shell 'p=$(pm path moe.shizuku.privileged.api | head -1 | sed "s/^package://; s#/base.apk##"); $p/lib/arm/libshizuku.so'
+   ```
 4. V nastaveniach Shizuku zapni **štart po zapnutí zariadenia** a **TCP režim** (port 5555). Vďaka TCP režimu
    Shizuku nabehne aj na Ethernete, a pritom nechá otvorený port 5555 pre ADB.
 
-Over po reštarte: `adb -s $TV shell ps -A | grep shizuku_server`.
+Over po reštarte: `adb -s $TV shell ps -A | grep shizuku_server`. Shizuku nabieha asi 50 s po štarte TV.
 
-## 8. MacroDroid a makrá
-
-Inštalácia a povolenia:
+## 8. Casting a šetrič: tvguard.sh
 
 ```sh
-adb -s $TV install macrodroid-6.0.11-armeabi-v7a.apk
-A="adb -s $TV shell"
-$A pm grant com.arlosoft.macrodroid android.permission.WRITE_SECURE_SETTINGS
-$A appops set com.arlosoft.macrodroid WRITE_SETTINGS allow
-$A dumpsys deviceidle whitelist +com.arlosoft.macrodroid     # nech ho systém neuspáva
-adb -s $TV push tv/castwatch.sh /data/local/tmp/
-$A chmod 755 /data/local/tmp/castwatch.sh
+adb -s $TV push tv/tvguard.sh tv/castwatch.sh /data/local/tmp/
+adb -s $TV shell chmod 755 /data/local/tmp/tvguard.sh /data/local/tmp/castwatch.sh
 ```
 
-Makrá (MacroDroid > Pridať makro). Pri akciách typu Shell Script vyber režim **Shizuku**:
+Launcher (`TvGuard`, spúšťa ho `HomeKeyService` aj domovská obrazovka) zavolá cez Shizuku
+`/data/local/tmp/tvguard.sh`, len čo Shizuku po štarte nabehne, a potom každých 10 minút. Skript:
 
-**Cast after boot**: obnoví casting po štarte.
-- Spúšťač: *Device Boot*
-- Akcia: *Shell Script* (Shizuku):
-  ```sh
-  sleep 45
-  am force-stop com.google.android.apps.mediashell
-  pm enable --user 0 com.google.android.tungsten.setupwraith
-  sleep 10
-  pm disable-user --user 0 com.google.android.tungsten.setupwraith
-  ```
+- spustí `castwatch.sh`, ktorý opraví casting, keď prijímač beží bez kľúčov. Pamätá si opravený prijímač
+  v `/data/local/tmp/castwatch.pid` (PID a `boot_id`). Keď sa PID alebo štart TV zmení, opravu zopakuje (trvá
+  asi 11 s, casting je vtedy na chvíľu nedostupný). Po štarte TV je casting v poriadku asi o minútu;
+- drží šetrič na 2 minútach (`screen_off_timeout` = `120000`). Ambient mode (`dreamx`) pri aktualizácii vracia
+  10 minút.
 
-**Cast watchdog**: opraví casting, keď sa prijímač počas behu reštartuje.
-- Spúšťač: *Regular Interval*, 15 minút
-- Akcia: *Shell Script* (Shizuku): `sh /data/local/tmp/castwatch.sh`
+Launcher potrebuje povolenie Shizuku. Prvýkrát o neho požiada sám, alebo pri prvom „Stop app“. Potvrď
+**Allow all the time**. Stav je v appke Shizuku, v zozname autorizovaných aplikácií má byť zapnutý „Home“.
 
-Skript si pamätá PID opraveného prijímača v `/data/local/tmp/castwatch.pid`. Keď sa PID zmení, opravu zopakuje
-(trvá asi 11 s, casting je vtedy na chvíľu nedostupný). Prijímač, ktorý naštartoval 40 až 180 s po zapnutí TV,
-berie ako opravený makrom „Cast after boot“.
-
-**Setric 2 min**: drží šetrič na 2 minútach. Ambient mode (`dreamx`) pri aktualizácii vracia 10 minút.
-- Spúšťače: *Device Boot* a *Application Installed/Updated* (ľubovoľná appka)
-- Akcia: *System Setting*, tabuľka System, `screen_off_timeout` = `120000`
-
-Launcher pri prvom „Stop app“ vypýta povolenie Shizuku. Potvrď **Allow all the time**.
+Prečo nie MacroDroid: TV štartuje s hodinami nastavenými na pevný dátum, kým nedostane čas zo siete. MacroDroid
+preto každý štart považuje za opakovanie predchádzajúceho („Ignoring repeated BOOT_COMPLETED for the current
+boot“) a spúšťač *Device Boot* sa nespustí. Okrem toho sa MacroDroid po reštarte TV sám prepne na „Vypnuté“.
 
 ## 9. Overenie
 
 - Reštartuj TV. Bez dotyku musí naskočiť tento launcher, bez preblikávania pôvodného.
-- Po asi minúte: `adb -s $TV shell logcat -d | grep ClientAuthSigner` nájde
-  `Created singleton instance of ClientAuthSigner`. Makro „Cast after boot“ prebehlo.
+- Po asi 1,5 minúte: `adb -s $TV shell logcat -d | grep ClientAuthSigner` nájde
+  `Created singleton instance of ClientAuthSigner` a `adb -s $TV shell cat /data/local/tmp/castwatch.pid`
+  ukáže PID prijímača a aktuálny `boot_id`. Oprava prebehla.
+- `adb -s $TV shell settings get system screen_off_timeout` vráti `120000`.
 - Kontrola, ktorú robí Chrome pred zobrazením TV:
   ```sh
   uvx --with pychromecast python -I tv/cast-auth-check.py 192.168.100.39
   # AUTH OK: cert 956 B, sig 256 B, intermediates 1
   ```
-  `cert 0 B` znamená, že prijímač nemá kľúče. Spusti `./cast-fix.sh`, alebo počkaj na „Cast watchdog“.
+  `cert 0 B` znamená, že prijímač nemá kľúče. Spusti `./cast-fix.sh`, alebo počkaj najviac 10 minút.
 - Skutočným ovládačom vyskúšaj tlačidlá YouTube, Netflix a hviezdičku. Stlačenia cez ADB nestačia.
-- V MacroDroide pri „Cast watchdog“ musí po 15 minútach svietiť „Ran … ago“.
 - Telefón aj PC musia byť v sieti, kde je TV. Hľadanie castu (mDNS) nejde medzi dvoma sieťami.
 
-Oprava castu z PC, napríklad keď je makro vypnuté: `TV=$TV ./cast-fix.sh`.
+Oprava castu z PC, napríklad keď Shizuku nebeží: `TV=$TV ./cast-fix.sh`.
 
 ## 10. Záchrana a návrat
 
@@ -240,16 +233,13 @@ adb -s $TV shell pm enable com.google.android.apps.tv.launcherx
 adb -s $TV shell cmd package set-home-activity com.google.android.apps.tv.launcherx/.home.HomeActivity
 adb -s $TV shell settings put secure enabled_accessibility_services '""'
 adb -s $TV uninstall com.filip.tvhome
+adb -s $TV shell rm -f /data/local/tmp/tvguard.sh /data/local/tmp/castwatch.sh /data/local/tmp/castwatch.pid
 ```
-
-V MacroDroide vypni alebo zmaž makrá „Cast after boot“ a „Cast watchdog“.
 
 ## 11. Známe obmedzenia
 
-- Casting závisí od makier v MacroDroide a od Shizuku. Ak Shizuku po reštarte nenabehne, Chrome TV neuvidí,
+- Casting po štarte závisí od Shizuku a od launchera. Ak Shizuku po reštarte nenabehne, Chrome TV neuvidí,
   kým nespustíš `./cast-fix.sh`.
 - Port 5555 zostáva otvorený (TCP režim Shizuku). Pustí len potvrdené kľúče, no prenos je nešifrovaný.
-- Ak sa šetrič vráti na 10 minút a makro „Setric 2 min“ je vypnuté, pomôže
-  `adb -s $TV shell settings put system screen_off_timeout 120000`.
 - Bez Shizuku vie „Stop app“ na Androide 14 len otvoriť Info o aplikácii. Odtiaľ appku zastavíš tlačidlom
   „Force stop“.
