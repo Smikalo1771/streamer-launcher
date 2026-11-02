@@ -8,8 +8,11 @@ Výsledok:
 - Domovská obrazovka je tento launcher (`com.filip.tvhome`). Pôvodný launcher Google TV (`launcherx`) a sprievodca
   nastavením (`setupwraith`) sú vypnuté, nie odinštalované.
 - Telemetria, Privacy Sandbox a nepotrebné predinštalované appky sú vypnuté (`tv/debloat.txt`).
-- Tlačidlá na ovládači: YouTube otvára YouTube, Netflix a hviezdička otvárajú appky vybrané v nastaveniach
-  launchera (predvolene Nuvio a IPTV).
+- Tlačidlá na ovládači: YouTube, Netflix a hviezdička otvárajú appky vybrané v nastaveniach launchera
+  (predvolene YouTube, Nuvio a IPTV). Každé tlačidlo môže mať aj inú appku na podržanie.
+- Keď Android vypne pomocnú službu tlačidiel, launcher ju sám zapne pri návrate na domovskú obrazovku
+  a `tvguard.sh` najneskôr do 10 minút.
+- Po štarte sa TV sama prepne na HDMI vstup prehrávača.
 - Launcher je po slovensky, česky alebo anglicky podľa jazyka nastaveného na Streameri.
 - Casting z telefónu aj z Chrome funguje. Udržiava ho launcher (`TvGuard`), ktorý cez Shizuku spúšťa
   `tv/tvguard.sh` hneď po štarte a potom každých 10 minút.
@@ -41,8 +44,11 @@ TV (`/data/local/tmp/...`) nastav `export MSYS_NO_PATHCONV=1`, inak ich Git Bash
 V príkazoch nižšie nahraď IP adresu tou svojou:
 
 ```sh
-export TV=192.168.100.39:5555
+export TV=192.168.0.129:5555
 ```
+
+`install.sh` a `health.sh` si prehrávač nájdu aj samy: skúsia poslednú adresu, ktorá fungovala (`.tv-address`), inak
+prehľadajú sieť. Aby sa adresa nemenila, nastav v routeri prehrávaču pevnú IP (časť 12).
 
 ## 2. ADB na TV
 
@@ -95,7 +101,8 @@ Riadky pre `setupwraith` a `launcherx` sú v súbore zakomentované schválne. T
 1. V `gradle.properties` nastav `launcherApplicationId` (u nás `com.filip.tvhome`).
 2. V `app/src/main/res/values/config.xml` sú v `app_keys` predvolené appky pre tlačidlá na ovládači. Netflix a
    hviezdičku si potom každý zmení priamo na TV: podrž OK na ozubenom kolieske > **Launcher settings** >
-   **Netflix button** / **Star button**. Zmena platí hneď.
+   **Tlačidlo YouTube** / **Tlačidlo Netflix** / **Tlačidlo hviezdička**. Pri každom sa zvlášť vyberá
+   **Stlačenie** a **Podržanie** (pol sekundy). Zmena platí hneď.
 
    | kód | tlačidlo | appka |
    |---|---|---|
@@ -103,12 +110,16 @@ Riadky pre `setupwraith` a `launcherx` sú v súbore zakomentované schválne. T
    | 191 | Netflix | `com.nuvio.tv` |
    | 313 | hviezdička (`MACRO_1`) | `com.example.iptvplayer` |
 
-3. Zostav a nainštaluj. Skript zostaví release APK, nainštaluje ho, udelí povolenia a zapne `HomeKeyService`
-   (pomocnú službu pre tlačidlá):
+3. Zostav a nainštaluj. Skript zostaví release APK, nainštaluje ho, udelí povolenia, nahrá skripty z `tv/`
+   (časť 8) a zapne `HomeKeyService` (pomocnú službu pre tlačidlá):
 
    ```sh
-   TV=$TV ./install.sh
+   ./install.sh                  # TV=$TV ./install.sh pre konkrétnu adresu
+   SKIP_BUILD=1 ./install.sh     # bez zostavenia, už zostavené APK
+   SCRIPTS_ONLY=1 ./install.sh   # len skripty z tv/
    ```
+
+   Na Windows to beží v Git Bash. JDK 17 si skript nájde v `~/.jdks`, `~/.gradle/jdks` alebo `/usr/lib/jvm`.
 
 4. Nastav launcher ako domovskú obrazovku:
 
@@ -175,6 +186,8 @@ Over po reštarte: `adb -s $TV shell ps -A | grep shizuku_server`. Shizuku nabie
 
 ## 8. Casting, HDMI vstup a šetrič: tvguard.sh
 
+`install.sh` ich nahrá sám (`SCRIPTS_ONLY=1 ./install.sh` len ich). Ručne:
+
 ```sh
 adb -s $TV push tv/tvguard.sh tv/castwatch.sh /data/local/tmp/
 adb -s $TV shell chmod 755 /data/local/tmp/tvguard.sh /data/local/tmp/castwatch.sh
@@ -183,6 +196,8 @@ adb -s $TV shell chmod 755 /data/local/tmp/tvguard.sh /data/local/tmp/castwatch.
 Launcher (`TvGuard`, spúšťa ho `HomeKeyService` aj domovská obrazovka) zavolá cez Shizuku
 `/data/local/tmp/tvguard.sh`, len čo Shizuku po štarte nabehne, a potom každých 10 minút. Skript:
 
+- zapne `HomeKeyService`, keď chýba v zozname služieb prístupnosti (napríklad po vynútenom zastavení launchera).
+  Len pri zapnutej obrazovke;
 - raz po každom štarte pošle cez HDMI-CEC „One Touch Play“ (`cmd hdmi_control onetouchplay`), takže TV sa sama
   prepne na vstup prehrávača. Sám to po štarte nerobí. Štart, pre ktorý už prepol, si pamätá
   v `/data/local/tmp/hdmi.boot` (`boot_id`). Keď prehrávač spí alebo odoslanie zlyhá, skúsi to pri ďalšom behu;
@@ -194,6 +209,10 @@ Launcher (`TvGuard`, spúšťa ho `HomeKeyService` aj domovská obrazovka) zavol
 - drží šetrič na 2 minútach (`screen_off_timeout` = `120000`). Ambient mode (`dreamx`) pri aktualizácii vracia
   10 minút.
 
+Čo skript urobil, zapisuje do `/data/local/tmp/tvguard.log` (posledných 200 až 300 riadkov): štart, zapnutie
+služby tlačidiel, prepnutie HDMI, opravu castingu, vrátenie šetriča. Keď sa niečo pokazí, pozri sa najprv tam:
+`adb -s $TV shell cat /data/local/tmp/tvguard.log`. Posledné riadky ukáže aj `./health.sh`.
+
 Launcher potrebuje povolenie Shizuku. Prvýkrát o neho požiada sám, alebo pri prvom „Stop app“. Potvrď
 **Allow all the time**. Stav je v appke Shizuku, v zozname autorizovaných aplikácií má byť zapnutý „Home“.
 
@@ -202,6 +221,10 @@ preto každý štart považuje za opakovanie predchádzajúceho („Ignoring rep
 boot“) a spúšťač *Device Boot* sa nespustí. Okrem toho sa MacroDroid po reštarte TV sám prepne na „Vypnuté“.
 
 ## 9. Overenie
+
+Všetko naraz overí `./health.sh` (launcher, tlačidlá, Shizuku a TvGuard, HDMI, casting vrátane Chrome kontroly,
+šetrič, pamäť a procesor, log TvGuard). `FIX=1 ./health.sh` opraví, čo sa dá z PC: zapne službu tlačidiel, nahrá
+staré skripty, prepne HDMI a spustí `cast-fix.sh`. Ručne:
 
 - Reštartuj TV. Bez dotyku musí naskočiť tento launcher, bez preblikávania pôvodného, a TV sa do minúty sama
   prepne na vstup prehrávača (`adb -s $TV shell cat /data/local/tmp/hdmi.boot` = aktuálny `boot_id`).
@@ -253,3 +276,49 @@ adb -s $TV shell rm -f /data/local/tmp/tvguard.sh /data/local/tmp/castwatch.sh /
 - Port 5555 zostáva otvorený (TCP režim Shizuku). Pustí len potvrdené kľúče, no prenos je nešifrovaný.
 - Bez Shizuku vie „Stop app“ na Androide 14 len otvoriť Info o aplikácii. Odtiaľ appku zastavíš tlačidlom
   „Force stop“.
+
+## 12. Pomôcky
+
+### Pevná IP adresa prehrávača
+
+Router prideľuje adresy dynamicky, takže sa adresa prehrávača môže zmeniť (u nás z `192.168.100.39` na
+`192.168.0.129`). V routeri (u nás `http://192.168.0.1`) nájdi DHCP rezerváciu, „Address Reservation“ alebo
+„Static Lease“ a priraď prehrávaču jeho súčasnú adresu podľa MAC adresy:
+
+| rozhranie | MAC |
+|---|---|
+| Ethernet (`eth0`, používa sa) | `b8:7b:d4:dd:80:d7` |
+| Wi-Fi (`wlan0`) | `b8:7b:d4:dd:80:d5` |
+
+MAC adresy iného kusu: `adb -s $TV shell ip -o link | grep -E 'eth0|wlan0'`.
+
+### Záloha nastavení launchera
+
+**Launcher settings > Zálohovať nastavenia launchera** uloží tapetu, mriežku, appky tlačidiel a appku po štarte do
+`/sdcard/Android/data/com.filip.tvhome/files/launcher-settings.json`. **Obnoviť nastavenia launchera** ich vráti.
+Na prenos na ďalší Streamer:
+
+```sh
+adb -s $TV pull /sdcard/Android/data/com.filip.tvhome/files/launcher-settings.json
+adb -s <druhý TV> push launcher-settings.json /sdcard/Android/data/com.filip.tvhome/files/
+```
+
+Potom na druhom TV **Obnoviť nastavenia launchera**. Záznam o téme (`theme_signature`) patrí každému kusu zvlášť,
+preto sa nezálohuje ani neprepíše.
+
+### Spúšťanie appiek z mobilu alebo Home Assistant
+
+Launcher odpovedá na `market://launch?id=<balík>`, ktoré posiela Android TV Remote (aj integrácia Home Assistant
+**Android TV Remote**). V Home Assistant:
+
+```yaml
+action: remote.turn_on
+target:
+  entity_id: remote.google_tv_streamer
+data:
+  activity: market://launch?id=com.example.iptvplayer
+```
+
+Napríklad automatizácia „o 20:00 zapni TV a spusti IPTV“: `remote.turn_on` bez `activity` (zobudí prehrávač a cez
+HDMI-CEC zapne TV), potom to isté s `activity`. Nuvio: `market://launch?id=com.nuvio.tv`. Z PC to isté cez ADB:
+`adb -s $TV shell am start -a android.intent.action.VIEW -d market://launch?id=com.nuvio.tv`.

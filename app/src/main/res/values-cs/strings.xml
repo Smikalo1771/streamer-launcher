@@ -128,9 +128,22 @@
     <string name="shamsi_month_bahman">Bahman</string>
     <string name="shamsi_month_esfand">Esfand</string>
     <string name="netflix_button_label">Tlačítko Netflix</string>
-    <string name="netflix_button_state">Tlačítko Netflix: %1$s</string>
     <string name="star_button_label">Tlačítko hvězdička</string>
-    <string name="star_button_state">Tlačítko hvězdička: %1$s</string>
+    <string name="youtube_button_label">Tlačítko YouTube</string>
+    <string name="button_press_state">Stisk: %1$s</string>
+    <string name="button_hold_state">Podržení: %1$s</string>
+    <string name="button_press_title">%1$s: stisk</string>
+    <string name="button_hold_title">%1$s: podržení</string>
+    <string name="button_state_with_hold">%1$s · podržení: %2$s</string>
+    <string name="backup_settings">Zálohovat nastavení launcheru</string>
+    <string name="restore_settings">Obnovit nastavení launcheru</string>
+    <string name="backup_hint">Tapeta, mřížka, aplikace tlačítek na ovladači a aplikace po startu se uloží do launcher-settings.json ve složce launcheru. Zkopírováním souboru na jiný Streamer ho nastavíte stejně.</string>
+    <string name="backup_saved">Uloženo: %1$s</string>
+    <string name="backup_failed">Zálohu se nepodařilo uložit.</string>
+    <string name="restore_none">Zatím není žádná záloha. Nejprve nastavení zálohujte.</string>
+    <string name="restore_confirm">Nahradit současné nastavení launcheru zálohou?</string>
+    <string name="restore_done">Nastavení obnoveno.</string>
+    <string name="restore_failed">Zálohu se nepodařilo načíst.</string>
     <string name="gtv_move">Přesunout</string>
     <string name="gtv_hide_app">Skrýt aplikaci</string>
     <string name="gtv_hide_app_rows">Skrýt řady této aplikace</string>
@@ -170,4 +183,6 @@
     <string name="race_countdown_hours">%1$d h %2$d min</string>
     <string name="race_countdown_days">%1$d d %2$d h</string>
     <string name="gtv_watch_next">Pokračovat ve sledování</string>
+    <string name="buttons_turned_on">Tlačítka na ovladači byla vypnutá, znovu jsem je zapnul.</string>
+    <string name="buttons_off">Tlačítka na ovladači (YouTube, Netflix, hvězdička) nefungují: zapněte pomocníka launcheru v Nastavení > Přístupnost, nebo z PC spusťte FIX=1 ./health.sh.</string>
 </resources>

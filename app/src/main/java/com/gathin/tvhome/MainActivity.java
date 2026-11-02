@@ -1057,6 +1057,28 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         tileRefresh.onStart();
     }
 
+    /** Once per process: Home already said the remote's buttons are off and could not turn them on. */
+    private static boolean buttonsOffShown;
+
+    /**
+     * The remote's YouTube, Netflix and star buttons need HomeKeyService. Turn it back on when Android dropped it,
+     * and say so; when it cannot be turned on, say that the buttons are off and how to fix it, once per process.
+     */
+    private void checkRemoteButtons() {
+        switch (ServiceRepair.keepHomeKeyOn(this)) {
+            case TURNED_ON:
+                Toast.makeText(this, R.string.buttons_turned_on, Toast.LENGTH_SHORT).show();
+                break;
+            case OFF:
+                if (buttonsOffShown) break;
+                buttonsOffShown = true;
+                Toast.makeText(this, R.string.buttons_off, Toast.LENGTH_LONG).show();
+                break;
+            default:
+                break;
+        }
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -1075,6 +1097,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         restartIdleClock();
         promptsPaused = false;
+        checkRemoteButtons();
         if (grid.getAdapter() == null) grid.setAdapter(adapter);   // dropped by onTrimMemory
         // gtv_home: re-read the hidden items and order (Launcher settings may have changed them) and the rows.
         if (gtvHome != null) gtvHome.refresh();

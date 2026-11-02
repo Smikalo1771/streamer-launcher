@@ -44,8 +44,11 @@ public final class LauncherSettingsActivity extends Activity {
     private TextView advancedChoice;
     private TextView followThemeChoice;
     private TextView openOnStartChoice;
-    private TextView netflixButtonChoice;
-    private TextView starButtonChoice;
+    /** Rows for ButtonApps.BUTTONS, in the same order. */
+    private final TextView[] buttonChoices = new TextView[ButtonApps.BUTTONS.length];
+    private static final int[] BUTTON_ROWS = {R.id.youtubeButtonChoice, R.id.netflixButtonChoice, R.id.starButtonChoice};
+    private static final int[] BUTTON_LABELS = {R.string.youtube_button_label, R.string.netflix_button_label,
+            R.string.star_button_label};
     private int columns;
     private int rowsBelowDock;
     private int dockOpacity;
@@ -152,10 +155,28 @@ public final class LauncherSettingsActivity extends Activity {
             openOnStartChoice.setVisibility(View.VISIBLE);
             openOnStartChoice.setOnClickListener(v -> showOpenOnStartPicker());
         }
-        netflixButtonChoice = findViewById(R.id.netflixButtonChoice);
-        netflixButtonChoice.setOnClickListener(v -> showButtonPicker(ButtonApps.NETFLIX, R.string.netflix_button_label));
-        starButtonChoice = findViewById(R.id.starButtonChoice);
-        starButtonChoice.setOnClickListener(v -> showButtonPicker(ButtonApps.STAR, R.string.star_button_label));
+        for (int i = 0; i < ButtonApps.BUTTONS.length; i++) {
+            final int code = ButtonApps.BUTTONS[i], label = BUTTON_LABELS[i];
+            buttonChoices[i] = findViewById(BUTTON_ROWS[i]);
+            buttonChoices[i].setOnClickListener(v -> showButtonMenu(code, label));
+        }
+        findViewById(R.id.backupChoice).setOnClickListener(v -> {
+            boolean saved = SettingsBackup.save(this);
+            Toast.makeText(this, saved ? getString(R.string.backup_saved, SettingsBackup.file(this).getPath())
+                    : getString(R.string.backup_failed), Toast.LENGTH_LONG).show();
+        });
+        findViewById(R.id.restoreChoice).setOnClickListener(v -> {
+            if (!SettingsBackup.exists(this)) {
+                Toast.makeText(this, R.string.restore_none, Toast.LENGTH_LONG).show();
+                return;
+            }
+            new AlertDialog.Builder(this)
+                    .setTitle(R.string.restore_settings)
+                    .setMessage(R.string.restore_confirm)
+                    .setPositiveButton(R.string.restore_settings, (dialog, which) -> restoreSettings())
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show();
+        });
         followThemeChoice = findViewById(R.id.followThemeChoice);
         followThemeChoice.setOnClickListener(v -> {
             if (!hasOnTvChoices()) return;
@@ -325,22 +346,47 @@ public final class LauncherSettingsActivity extends Activity {
                 .show();
     }
 
-    /** The app a remote button opens: Off, or one of the TV apps. Takes effect at once (HomeKeyService). */
-    private void showButtonPicker(int keycode, int title) {
+    /** Settings back from the backup file: re-read everything, Home rebuilds and the buttons take the new apps. */
+    private void restoreSettings() {
+        if (!SettingsBackup.restore(this)) {
+            Toast.makeText(this, R.string.restore_failed, Toast.LENGTH_LONG).show();
+            return;
+        }
+        setResult(RESULT_OK);
+        HomeKeyService.reloadConfig();
+        Toast.makeText(this, R.string.restore_done, Toast.LENGTH_LONG).show();
+        recreate();
+    }
+
+    /** A remote button: what a press opens and what a hold opens, each picked on its own. */
+    private void showButtonMenu(int keycode, int title) {
+        String[] items = {
+                getString(R.string.button_press_state, appLabel(buttonPackage(keycode, false))),
+                getString(R.string.button_hold_state, appLabel(buttonPackage(keycode, true))),
+        };
+        new AlertDialog.Builder(this)
+                .setTitle(title)
+                .setItems(items, (dialog, which) -> showButtonPicker(keycode, which == 1, title))
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    /** The app a press or hold of a remote button opens: Off, or a TV app. Takes effect at once (HomeKeyService). */
+    private void showButtonPicker(int keycode, boolean hold, int title) {
         List<String[]> apps = tvApps();
         String[] labels = new String[apps.size() + 1];
         labels[0] = getString(R.string.off);
-        String current = buttonPackage(keycode);
+        String current = buttonPackage(keycode, hold);
         int checked = 0;
         for (int i = 0; i < apps.size(); i++) {
             labels[i + 1] = apps.get(i)[0];
             if (apps.get(i)[1].equals(current)) checked = i + 1;
         }
         new AlertDialog.Builder(this)
-                .setTitle(title)
+                .setTitle(getString(hold ? R.string.button_hold_title : R.string.button_press_title, getString(title)))
                 .setSingleChoiceItems(labels, checked, (dialog, which) -> {
                     dialog.dismiss();
-                    choices.edit().putString(ButtonApps.key(keycode),
+                    choices.edit().putString(ButtonApps.key(keycode, hold),
                             which == 0 ? ButtonApps.NONE : apps.get(which - 1)[1]).apply();
                     HomeKeyService.reloadConfig();
                     refresh();
@@ -349,9 +395,10 @@ public final class LauncherSettingsActivity extends Activity {
                 .show();
     }
 
-    /** The package a remote button opens now (Launcher settings over app_keys), or "" for none. */
-    private String buttonPackage(int keycode) {
-        String pkg = RemoteKeys.parseAppKeys(Config.load(this).appKeys).get(keycode);
+    /** The package a press or hold of a remote button opens now (Launcher settings over app_keys), or "" for none. */
+    private String buttonPackage(int keycode, boolean hold) {
+        List<String> keys = Config.load(this).appKeys;
+        String pkg = (hold ? RemoteKeys.parseHoldAppKeys(keys) : RemoteKeys.parseAppKeys(keys)).get(keycode);
         return pkg != null ? pkg : "";
     }
 
@@ -418,8 +465,13 @@ public final class LauncherSettingsActivity extends Activity {
                         : wallpaperCurrent != null ? wallpaperCurrent
                         : getString(R.string.wallpaper_theme_default)));
         openOnStartChoice.setText(getString(R.string.open_on_start_state, openOnStartLabel()));
-        netflixButtonChoice.setText(getString(R.string.netflix_button_state, appLabel(buttonPackage(ButtonApps.NETFLIX))));
-        starButtonChoice.setText(getString(R.string.star_button_state, appLabel(buttonPackage(ButtonApps.STAR))));
+        for (int i = 0; i < ButtonApps.BUTTONS.length; i++) {
+            int code = ButtonApps.BUTTONS[i];
+            String hold = buttonPackage(code, true);
+            String press = getString(BUTTON_LABELS[i]) + ": " + appLabel(buttonPackage(code, false));
+            buttonChoices[i].setText(hold.isEmpty() ? press
+                    : getString(R.string.button_state_with_hold, press, appLabel(hold)));
+        }
         followThemeChoice.setSelected(!hasOnTvChoices());
     }
 

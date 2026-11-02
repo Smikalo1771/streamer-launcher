@@ -101,6 +101,55 @@ final class ServiceRepair {
                 && Settings.Secure.putString(cr, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, updated);
     }
 
+    /** HomeKeyService ran on this install: from now on Home keeps it on (see {@link #keepHomeKeyOn}). Never dropped. */
+    static void markHomeKeyUsed(Context context) {
+        SharedPreferences used = context.getSharedPreferences(USED, Context.MODE_PRIVATE);
+        if (!used.getBoolean(HomeKeyService.class.getName(), false)) {
+            used.edit().putBoolean(HomeKeyService.class.getName(), true).apply();
+        }
+    }
+
+    enum HomeKeyState { ON, TURNED_ON, OFF }
+
+    /**
+     * Home came to the front: put HomeKeyService back on the enabled list when it has run on this install before
+     * and is missing now. The remote's YouTube, Netflix and star buttons go through it, and Android drops it from
+     * the list after a force stop or an unbind, which {@link #restore} misses unless Home is created anew. OFF
+     * means it is missing and cannot be put back (no WRITE_SECURE_SETTINGS), so Home can say so.
+     */
+    static HomeKeyState keepHomeKeyOn(Context context) {
+        if (!context.getSharedPreferences(USED, Context.MODE_PRIVATE)
+                .getBoolean(HomeKeyService.class.getName(), false)) return HomeKeyState.ON;   // never used here
+        ContentResolver cr = context.getContentResolver();
+        ComponentName mine = new ComponentName(context, HomeKeyService.class);
+        String list;
+        try {
+            list = Settings.Secure.getString(cr, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+        } catch (RuntimeException e) {
+            return HomeKeyState.ON;
+        }
+        List<String> entries = new ArrayList<>();
+        if (list != null && !list.equals("null")) {
+            for (String entry : list.split(":")) {
+                if (entry.isEmpty()) continue;
+                if (mine.equals(ComponentName.unflattenFromString(entry))) return HomeKeyState.ON;
+                entries.add(entry);
+            }
+        }
+        if (context.checkSelfPermission(Manifest.permission.WRITE_SECURE_SETTINGS)
+                != PackageManager.PERMISSION_GRANTED) return HomeKeyState.OFF;
+        entries.add(mine.flattenToShortString());
+        try {
+            Settings.Secure.putString(cr, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, String.join(":", entries));
+            Settings.Secure.putInt(cr, Settings.Secure.ACCESSIBILITY_ENABLED, 1);
+            return HomeKeyState.TURNED_ON;
+        } catch (RuntimeException e) {
+            return HomeKeyState.OFF;
+        }
+    }
+
+    private static final String USED = "accessibility_helpers_used";
+
     private static SharedPreferences prefs(Context context) {
         return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
     }

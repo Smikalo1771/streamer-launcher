@@ -61,9 +61,22 @@
     <string name="open_on_start_label">Otvoriť po štarte</string>
     <string name="open_on_start_state">Otvoriť po štarte: %1$s</string>
     <string name="netflix_button_label">Tlačidlo Netflix</string>
-    <string name="netflix_button_state">Tlačidlo Netflix: %1$s</string>
     <string name="star_button_label">Tlačidlo hviezdička</string>
-    <string name="star_button_state">Tlačidlo hviezdička: %1$s</string>
+    <string name="youtube_button_label">Tlačidlo YouTube</string>
+    <string name="button_press_state">Stlačenie: %1$s</string>
+    <string name="button_hold_state">Podržanie: %1$s</string>
+    <string name="button_press_title">%1$s: stlačenie</string>
+    <string name="button_hold_title">%1$s: podržanie</string>
+    <string name="button_state_with_hold">%1$s · podržanie: %2$s</string>
+    <string name="backup_settings">Zálohovať nastavenia launchera</string>
+    <string name="restore_settings">Obnoviť nastavenia launchera</string>
+    <string name="backup_hint">Tapeta, mriežka, appky tlačidiel na ovládači a appka po štarte sa uložia do launcher-settings.json v priečinku launchera. Skopírovaním súboru na iný Streamer ho nastavíš rovnako.</string>
+    <string name="backup_saved">Uložené: %1$s</string>
+    <string name="backup_failed">Zálohu sa nepodarilo uložiť.</string>
+    <string name="restore_none">Zatiaľ nie je žiadna záloha. Najprv nastavenia zálohuj.</string>
+    <string name="restore_confirm">Nahradiť súčasné nastavenia launchera zálohou?</string>
+    <string name="restore_done">Nastavenia obnovené.</string>
+    <string name="restore_failed">Zálohu sa nepodarilo načítať.</string>
     <string name="advanced_effects_warning">Pridá zdvihnutú dlaždicu, zväčšenie ikony a plynulé prechody farieb. Môže zvýšiť spotrebu pamäte; skutočný rozdiel závisí od TV.</string>
     <string name="follow_theme">Podľa témy (zrušiť voľby na TV)</string>
     <string name="follow_theme_hint">Použije rozloženie a pohyb z aktuálnej témy alebo vstavané nastavenia. Nahratie alebo zrušenie témy tiež vymaže voľby urobené na TV.</string>
@@ -171,4 +184,6 @@
     <string name="last_opened">Naposledy otvorené %1$s</string>
     <string name="game_live">Práve naživo</string>
     <string name="gtv_watch_next">Pokračovať v pozeraní</string>
+    <string name="buttons_turned_on">Tlačidlá na ovládači boli vypnuté, znova som ich zapol.</string>
+    <string name="buttons_off">Tlačidlá na ovládači (YouTube, Netflix, hviezdička) nefungujú: zapni pomocníka launchera v Nastavenia > Prístupnosť, alebo z PC spusti FIX=1 ./health.sh.</string>
 </resources>

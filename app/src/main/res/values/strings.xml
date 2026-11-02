@@ -63,9 +63,22 @@
     <string name="open_on_start_label">Open on start</string>
     <string name="open_on_start_state">Open on start: %1$s</string>
     <string name="netflix_button_label">Netflix button</string>
-    <string name="netflix_button_state">Netflix button: %1$s</string>
     <string name="star_button_label">Star button</string>
-    <string name="star_button_state">Star button: %1$s</string>
+    <string name="youtube_button_label">YouTube button</string>
+    <string name="button_press_state">Press: %1$s</string>
+    <string name="button_hold_state">Hold: %1$s</string>
+    <string name="button_press_title">%1$s: press</string>
+    <string name="button_hold_title">%1$s: hold</string>
+    <string name="button_state_with_hold">%1$s · hold: %2$s</string>
+    <string name="backup_settings">Back up launcher settings</string>
+    <string name="restore_settings">Restore launcher settings</string>
+    <string name="backup_hint">Wallpaper, grid, the remote buttons\' apps and the app opened at start go to launcher-settings.json in the launcher\'s folder. Copy that file to another Streamer to set it up the same way.</string>
+    <string name="backup_saved">Saved: %1$s</string>
+    <string name="backup_failed">Could not save the backup.</string>
+    <string name="restore_none">No backup yet. Back up the settings first.</string>
+    <string name="restore_confirm">Replace the current launcher settings with the backup?</string>
+    <string name="restore_done">Settings restored.</string>
+    <string name="restore_failed">Could not read the backup.</string>
     <string name="advanced_effects_warning">Adds a lifted tile, icon zoom and smooth colour transitions. May increase memory use; the actual difference depends on your TV.</string>
     <string name="follow_theme">Follow theme (reset on-TV choices)</string>
     <string name="follow_theme_hint">Uses the current theme or built-in layout and motion settings. Pushing or resetting a theme also clears your on-TV choices.</string>
@@ -179,4 +192,6 @@
     <string name="game_live">Live now</string>
     <!-- ChannelRepo: the title of the Watch Next row. -->
     <string name="gtv_watch_next">Continue watching</string>
+    <string name="buttons_turned_on">Remote buttons were off; turned them on again.</string>
+    <string name="buttons_off">Remote buttons (YouTube, Netflix, star) are off: turn on the launcher helper in Settings &gt; Accessibility, or run FIX=1 ./health.sh from the PC.</string>
 </resources>
