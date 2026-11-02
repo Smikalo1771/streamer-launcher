@@ -61,6 +61,8 @@ public class HomeKeyService extends AccessibilityService {
     private boolean consumeVolumeKeys;
     /** app_keys, the same maps InputKeyService reads, for setups that run only this service. */
     private Map<Integer, String> appKeys = Collections.emptyMap();
+    /** voice_open_apps: opens the app Google Assistant was asked for (AssistantWatch); null when off. */
+    private AssistantWatch assistantWatch;
     private Map<Integer, String> appScancodes = Collections.emptyMap();
     private Map<Integer, String> holdAppKeys = Collections.emptyMap();
     private Map<Integer, String> holdAppScancodes = Collections.emptyMap();
@@ -235,6 +237,15 @@ public class HomeKeyService extends AccessibilityService {
             info.eventTypes |= AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED;
             setServiceInfo(info);
         }
+        // voice_open_apps: window changes tell when the Assistant comes up; AssistantWatch then reads what it heard.
+        if (getResources().getBoolean(R.bool.voice_open_apps)) {
+            if (assistantWatch == null) assistantWatch = new AssistantWatch(this);
+            AccessibilityServiceInfo voice = getServiceInfo();
+            if (voice != null) {
+                voice.eventTypes |= AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED;
+                setServiceInfo(voice);
+            }
+        }
         if (!stockHome.isEmpty() || !powerOnLiveTv.isEmpty()) probeAtBoot();
         armStandbyExit();
         holdAppKeys = RemoteKeys.parseHoldAppKeys(config.appKeys);
@@ -304,12 +315,14 @@ public class HomeKeyService extends AccessibilityService {
     @Override
     public boolean onUnbind(Intent intent) {
         RemoteKeys.release(this);
+        if (assistantWatch != null) assistantWatch.stop();
         if (repairRecord && !steppingOut) ServiceRepair.disconnected(this, getClass());
         return super.onUnbind(intent);
     }
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
+        if (assistantWatch != null) assistantWatch.onEvent(event);
         if (event.getEventType() != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return;
         // app_keys "front:" entries: only activities count, so a toast or the volume bar doesn't change the app in front.
         if ((!frontAppKeys.isEmpty() || !frontAppScancodes.isEmpty())

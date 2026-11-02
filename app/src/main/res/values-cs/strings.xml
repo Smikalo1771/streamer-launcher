@@ -185,4 +185,8 @@
     <string name="gtv_watch_next">Pokračovat ve sledování</string>
     <string name="buttons_turned_on">Tlačítka na ovladači byla vypnutá, znovu jsem je zapnul.</string>
     <string name="buttons_off">Tlačítka na ovladači (YouTube, Netflix, hvězdička) nefungují: zapněte pomocníka launcheru v Nastavení > Přístupnost, nebo z PC spusťte FIX=1 ./health.sh.</string>
+    <string name="voice_prompt">Řekněte název aplikace, nebo se zeptejte Googlu</string>
+    <string name="voice_opening">Otevírám %1$s</string>
+    <string name="voice_closing">Zavírám %1$s</string>
+    <string name="voice_volume_steps">Hlasitost řídí televize: řekněte hlasitěji nebo tišeji.</string>
 </resources>

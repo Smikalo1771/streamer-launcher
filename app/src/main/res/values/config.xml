@@ -525,4 +525,8 @@
     <!-- Tiles drawn from the app's icon and name instead of its banner (for banners that crop badly). -->
     <string-array name="icon_tiles" translatable="false">
     </string-array>
+    <!-- voice_open_apps: when Google Assistant is asked to open an app ("otevři IPTV", "spusť Nuvio") the launcher
+         opens it, because the Assistant cannot with the stock launcher disabled. HomeKeyService reads the words the
+         Assistant shows (AssistantWatch); other questions stay with the Assistant. -->
+    <bool name="voice_open_apps">true</bool>
 </resources>

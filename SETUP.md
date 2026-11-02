@@ -13,6 +13,13 @@ Výsledok:
 - Keď Android vypne pomocnú službu tlačidiel, launcher ju sám zapne pri návrate na domovskú obrazovku
   a `tvguard.sh` najneskôr do 10 minút.
 - Po štarte sa TV sama prepne na HDMI vstup prehrávača.
+- Hlas: mikrofón na ovládači otvára Google Asistenta. Tieto príkazy vykoná launcher (`VoiceMatch`):
+  otvor/spusti/zapni *appku*, vypni/zavri *appku*, zavri (appka vpredu), vypni (TV do pohotovosti, TV sa vypne
+  cez HDMI-CEC), domov, späť, ztlum / vypni zvuk, zapni zvuk, hlasitejšie / tišie, pauza, pokračuj. Číslo
+  hlasitosti sa nastaviť nedá, hlasitosť drží TV alebo soundbar (CEC). Pri appkách to launcher robí za Asistenta. Asistent to sám nedokáže (`provider.OPEN` zlyhá, lebo pôvodný launcher je vypnutý).
+  `HomeKeyService` počas zobrazenia Asistenta číta rozpoznaný text (`AssistantWatch`, `voice_open_apps` v
+  `config.xml`). Ostatné otázky vybaví Asistent. Skúška bez hlasu:
+  `adb -s $TV shell "am start -a android.search.action.GLOBAL_SEARCH --es query 'otevři IPTV'"`.
 - Launcher je po slovensky, česky alebo anglicky podľa jazyka nastaveného na Streameri.
 - Casting z telefónu aj z Chrome funguje. Udržiava ho launcher (`TvGuard`), ktorý cez Shizuku spúšťa
   `tv/tvguard.sh` hneď po štarte a potom každých 10 minút.
