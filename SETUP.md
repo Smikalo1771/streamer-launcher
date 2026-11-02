@@ -173,7 +173,7 @@ voľbu „Stop app“.
 
 Over po reštarte: `adb -s $TV shell ps -A | grep shizuku_server`. Shizuku nabieha asi 50 s po štarte TV.
 
-## 8. Casting a šetrič: tvguard.sh
+## 8. Casting, HDMI vstup a šetrič: tvguard.sh
 
 ```sh
 adb -s $TV push tv/tvguard.sh tv/castwatch.sh /data/local/tmp/
@@ -183,9 +183,14 @@ adb -s $TV shell chmod 755 /data/local/tmp/tvguard.sh /data/local/tmp/castwatch.
 Launcher (`TvGuard`, spúšťa ho `HomeKeyService` aj domovská obrazovka) zavolá cez Shizuku
 `/data/local/tmp/tvguard.sh`, len čo Shizuku po štarte nabehne, a potom každých 10 minút. Skript:
 
+- raz po každom štarte pošle cez HDMI-CEC „One Touch Play“ (`cmd hdmi_control onetouchplay`), takže TV sa sama
+  prepne na vstup prehrávača. Sám to po štarte nerobí. Štart, pre ktorý už prepol, si pamätá
+  v `/data/local/tmp/hdmi.boot` (`boot_id`). Keď prehrávač spí alebo odoslanie zlyhá, skúsi to pri ďalšom behu;
 - spustí `castwatch.sh`, ktorý opraví casting, keď prijímač beží bez kľúčov. Pamätá si opravený prijímač
   v `/data/local/tmp/castwatch.pid` (PID a `boot_id`). Keď sa PID alebo štart TV zmení, opravu zopakuje (trvá
-  asi 11 s, casting je vtedy na chvíľu nedostupný). Po štarte TV je casting v poriadku asi o minútu;
+  asi 11 s, casting je vtedy na chvíľu nedostupný). Po štarte TV je casting v poriadku asi o minútu.
+  Opravu spustí aj vtedy, keď je TV zapnutá alebo v šetriči a prijímač nepočúva na porte 8009. Stáva sa to
+  po uspaní hneď po štarte: prijímač sa zastaví („Cast receiver stopped.“) a po zobudení sa sám nespustí;
 - drží šetrič na 2 minútach (`screen_off_timeout` = `120000`). Ambient mode (`dreamx`) pri aktualizácii vracia
   10 minút.
 
@@ -198,14 +203,15 @@ boot“) a spúšťač *Device Boot* sa nespustí. Okrem toho sa MacroDroid po r
 
 ## 9. Overenie
 
-- Reštartuj TV. Bez dotyku musí naskočiť tento launcher, bez preblikávania pôvodného.
+- Reštartuj TV. Bez dotyku musí naskočiť tento launcher, bez preblikávania pôvodného, a TV sa do minúty sama
+  prepne na vstup prehrávača (`adb -s $TV shell cat /data/local/tmp/hdmi.boot` = aktuálny `boot_id`).
 - Po asi 1,5 minúte: `adb -s $TV shell logcat -d | grep ClientAuthSigner` nájde
   `Created singleton instance of ClientAuthSigner` a `adb -s $TV shell cat /data/local/tmp/castwatch.pid`
   ukáže PID prijímača a aktuálny `boot_id`. Oprava prebehla.
 - `adb -s $TV shell settings get system screen_off_timeout` vráti `120000`.
 - Kontrola, ktorú robí Chrome pred zobrazením TV:
   ```sh
-  uvx --with pychromecast python -I tv/cast-auth-check.py 192.168.100.39
+  uvx --with pychromecast python -I tv/cast-auth-check.py <ip TV>
   # AUTH OK: cert 956 B, sig 256 B, intermediates 1
   ```
   `cert 0 B` znamená, že prijímač nemá kľúče. Spusti `./cast-fix.sh`, alebo počkaj najviac 10 minút.

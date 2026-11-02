@@ -10,8 +10,16 @@ W=com.google.android.tungsten.setupwraith
 S=/data/local/tmp/castwatch.pid
 B=$(cat /proc/sys/kernel/random/boot_id)
 
+# The receiver can also stop listening without its process restarting: after a standby right after boot it logs
+# "Cast receiver stopped." and does not start again on wake. Only judged while the TV is awake or in the screen
+# saver, because in standby a stopped receiver is normal. 1F49 = port 8009, 0A = LISTEN.
+listening() { grep -qiE '^ *[0-9]+: [0-9A-F]+:1F49 [0-9A-F]+:0000 0A ' /proc/net/tcp6 /proc/net/tcp 2>/dev/null; }
+awake() { dumpsys power 2>/dev/null | grep -E 'mWakefulness=(Awake|Dreaming)' >/dev/null; }
+
 pid=$(pidof $P)
-[ -n "$pid" ] && [ "$pid $B" = "$(cat $S 2>/dev/null)" ] && exit 0
+if [ -n "$pid" ] && [ "$pid $B" = "$(cat $S 2>/dev/null)" ]; then
+  listening || ! awake || { sleep 15; listening || ! awake; } && exit 0
+fi
 
 am force-stop $P
 pm enable --user 0 $W >/dev/null
