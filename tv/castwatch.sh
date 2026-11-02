@@ -21,10 +21,26 @@ if [ -n "$pid" ] && [ "$pid $B" = "$(cat $S 2>/dev/null)" ]; then
   listening || ! awake || { sleep 15; listening || ! awake; } && exit 0
 fi
 
+# Keep setupwraith enabled until the restarted receiver has really loaded its keys (it logs "Created singleton
+# instance of ClientAuthSigner"). Right after boot the set is so busy that the receiver can take well over 8 s to
+# come back; disabling setupwraith before that left it without keys until the next run, 10 min later.
 am force-stop $P
 pm enable --user 0 $W >/dev/null
-sleep 8
+pid=""
+signed=""
+i=0
+while [ $i -lt 30 ]; do
+  sleep 2
+  i=$((i + 1))
+  pid=$(pidof $P)
+  [ -n "$pid" ] || continue
+  if logcat -d --pid="$pid" 2>/dev/null | grep -q 'ClientAuthSigner'; then signed=1; break; fi
+done
 pm disable-user --user 0 $W >/dev/null
-sleep 3
-echo "$(pidof $P) $B" > $S
-echo "cast repaired"
+if [ -n "$signed" ]; then
+  echo "$pid $B" > $S
+  echo "cast repaired (receiver $pid, $((i * 2)) s)"
+else
+  rm -f $S   # not repaired: the next run tries again
+  echo "cast repair failed: receiver ${pid:-not running} without keys after $((i * 2)) s"
+fi

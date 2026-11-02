@@ -77,11 +77,13 @@ else
   uvx=$(command -v uvx || ls "${LOCALAPPDATA:-/nonexistent}"/Microsoft/WinGet/Packages/astral-sh.uv_*/uvx.exe 2>/dev/null | head -1)
   if [ -n "$uvx" ]; then
     auth=$(timeout 90 "$uvx" -q --with pychromecast python -I tv/cast-auth-check.py "${TV%:*}" 2>&1 | tail -1)
-    [[ "$auth" == "AUTH OK"* ]] && pass "Chrome kontrola: $auth" || fail "Chrome kontrola: ${auth:-bez odpovede}"
+    # "cert 0 B": the receiver answered without its device keys, and Chrome will not show the TV.
+    if [[ "$auth" == "AUTH OK"* && "$auth" != *"cert 0 B"* ]]; then pass "Chrome kontrola: $auth"
+    else fail "Chrome kontrola: ${auth:-bez odpovede} (prijímač nemá kľúče, Chrome TV neuvidí)"; fi
   else
     info "uvx nie je nainštalované, Chrome kontrola sa preskočí (winget install astral-sh.uv)"
   fi
-  if [ "${FIX:-}" = 1 ] && { [ -n "$auth" ] && [[ "$auth" != "AUTH OK"* ]]; }; then
+  if [ "${FIX:-}" = 1 ] && { [ -n "$auth" ] && { [[ "$auth" != "AUTH OK"* ]] || [[ "$auth" == *"cert 0 B"* ]]; }; }; then
     ./cast-fix.sh >/dev/null 2>&1 && info "opravené: cast-fix.sh spustený"
   fi
 fi
