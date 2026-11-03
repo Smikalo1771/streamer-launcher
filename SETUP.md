@@ -15,7 +15,8 @@ Výsledok:
 - Po štarte sa TV sama prepne na HDMI vstup prehrávača.
 - Hlas: mikrofón na ovládači otvára Google Asistenta. Tieto príkazy vykoná launcher (`VoiceMatch`):
   otvor/spusti/zapni *appku*, vypni/zavri *appku*, zavri (appka vpredu), vypni (TV do pohotovosti, TV sa vypne
-  cez HDMI-CEC), domov, späť, ztlum / vypni zvuk, zapni zvuk, hlasitejšie / tišie, pauza, pokračuj. Číslo
+  cez HDMI-CEC), domov, späť, ztlum / vypni zvuk, zapni zvuk, hlasitejšie / tišie, pauza, pokračuj, spusti šetrič (fotky
+  šetriča hneď, hudba hrá ďalej, tlačidlo vráti appku). Číslo
   hlasitosti sa nastaviť nedá, hlasitosť drží TV alebo soundbar (CEC). Pri appkách to launcher robí za Asistenta. Asistent to sám nedokáže (`provider.OPEN` zlyhá, lebo pôvodný launcher je vypnutý).
   `HomeKeyService` počas zobrazenia Asistenta číta rozpoznaný text (`AssistantWatch`, `voice_open_apps` v
   `config.xml`). Ostatné otázky vybaví Asistent. Skúška bez hlasu:

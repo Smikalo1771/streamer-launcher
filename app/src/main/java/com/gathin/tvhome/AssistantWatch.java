@@ -45,8 +45,8 @@ final class AssistantWatch {
     private final Runnable settle = this::settled;
     /** The app in front before the Assistant came up, for "zavri" and "vypni to"; null on Home. */
     private String front;
-    /** Back waits for the Assistant to leave, or it would only close the Assistant. */
-    private boolean backPending;
+    /** Waits for the Assistant to leave: Back would only close the Assistant, the screensaver would sit under it. */
+    private Runnable afterAssistant;
 
     AssistantWatch(AccessibilityService service) {
         this.service = service;
@@ -64,9 +64,10 @@ final class AssistantWatch {
             } else if (pkg != null && !"com.android.systemui".contentEquals(pkg) && !"android".contentEquals(pkg)) {
                 watch(false);
                 front = service.getPackageName().contentEquals(pkg) ? null : pkg.toString();
-                if (backPending) {
-                    backPending = false;
-                    handler.postDelayed(() -> service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK), 150);
+                if (afterAssistant != null) {
+                    Runnable r = afterAssistant;
+                    afterAssistant = null;
+                    handler.postDelayed(r, 150);
                 }
             }
             return;
@@ -165,14 +166,12 @@ final class AssistantWatch {
                 service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME);
                 break;
             case BACK:
-                backPending = true;
-                // The Assistant usually leaves on its own; if it stays up, Back first closes it, then acts.
-                handler.postDelayed(() -> {
-                    if (!backPending) return;
-                    backPending = false;
-                    service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK);
-                    handler.postDelayed(() -> service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK), 400);
-                }, 2500);
+                whenAssistantLeaves(() -> service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK));
+                break;
+            case SCREENSAVER:
+                // The launcher's clock screen with the screensaver's pictures (the Streamer has no "start the
+                // screensaver now" shortcut); music keeps playing, any key goes back to the app.
+                whenAssistantLeaves(() -> RemoteKeys.launch(service, "screensaver"));
                 break;
             case MUTE:
                 if (audio != null) audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_MUTE,
@@ -214,6 +213,17 @@ final class AssistantWatch {
             default:
                 break;
         }
+    }
+
+    /** Runs once the Assistant has left; if it stays up, Back closes it first after 2.5 s. */
+    private void whenAssistantLeaves(Runnable action) {
+        afterAssistant = action;
+        handler.postDelayed(() -> {
+            if (afterAssistant != action) return;
+            afterAssistant = null;
+            service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK);
+            handler.postDelayed(action, 400);
+        }, 2500);
     }
 
     private static void mediaKey(AudioManager audio, int code) {

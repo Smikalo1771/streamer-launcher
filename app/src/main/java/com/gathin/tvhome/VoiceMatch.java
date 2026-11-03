@@ -14,7 +14,8 @@ import java.util.Locale;
 final class VoiceMatch {
     private VoiceMatch() {}
 
-    enum Kind { OPEN, CLOSE, CLOSE_FRONT, SLEEP, HOME, BACK, MUTE, UNMUTE, VOLUME_UP, VOLUME_DOWN, VOLUME_SET, PAUSE, PLAY }
+    enum Kind { OPEN, CLOSE, CLOSE_FRONT, SLEEP, HOME, BACK, MUTE, UNMUTE, VOLUME_UP, VOLUME_DOWN, VOLUME_SET, PAUSE, PLAY,
+        SCREENSAVER }
 
     /** A command: what to do, the app for OPEN and CLOSE, the percent for VOLUME_SET. */
     static final class Command {
@@ -52,6 +53,11 @@ final class VoiceMatch {
             "tv", "televizor", "televizi", "televiziu", "televize", "televizia", "telku", "telka", "prehravac",
             "prijimac", "vse", "vsetko", "vsechno", "obrazovku", "the tv", "television",
     };
+    /** "spusti šetrič": the screensaver, with or without an open word before it. */
+    private static final String[] SCREENSAVER_WORDS = {
+            "setric", "setrica", "setric obrazovky", "sporic", "sporic obrazovky", "screensaver", "screen saver",
+            "the screensaver", "obrazky", "fotky aut",
+    };
     /** "zavri to": the app in front. */
     private static final String[] FRONT_WORDS = {"to", "aplikaci", "aplikaciu", "appku", "apku", "app", "it", "this"};
 
@@ -80,6 +86,9 @@ final class VoiceMatch {
         if (oneOf(s, "tisie", "tiseji", "potichu", "stis", "ztis", "znis hlasitost", "zniz hlasitost",
                 "uber hlasitost", "snizit hlasitost", "quieter", "volume down", "turn it down",
                 "turn down the volume")) return new Command(Kind.VOLUME_DOWN, null, 0);
+
+        String asked = after(s, OPEN_WORDS);
+        if (oneOf(asked != null ? asked : s, SCREENSAVER_WORDS)) return new Command(Kind.SCREENSAVER, null, 0);
 
         if (oneOf(s, "domov", "domu", "jdi domu", "chod domov", "hlavna obrazovka", "hlavni obrazovka", "plocha",
                 "home", "go home", "home screen")) return new Command(Kind.HOME, null, 0);

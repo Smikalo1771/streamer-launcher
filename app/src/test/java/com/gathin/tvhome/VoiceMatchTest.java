@@ -97,5 +97,8 @@ public class VoiceMatchTest {
         assertEquals("PAUSE", cmd("pauza"));
         assertEquals("PLAY", cmd("pokračuj"));
         assertEquals("OPEN:com.nuvio.tv", cmd("zapni Nuvio"));
+        assertEquals("SCREENSAVER", cmd("spusti šetrič"));
+        assertEquals("SCREENSAVER", cmd("Spusť spořič obrazovky"));
+        assertEquals("SCREENSAVER", cmd("šetrič"));
     }
 }
