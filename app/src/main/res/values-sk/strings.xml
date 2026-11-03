@@ -198,4 +198,11 @@
     <string name="voice_alias_pick_app">Pre ktorú appku?</string>
     <string name="voice_alias_name_for">Prezývka pre %1$s</string>
     <string name="voice_alias_hint">napr. telka</string>
+    <string name="power_off_idle_warning">Pozeráš ešte? Televízor sa vypne o %1$s.</string>
+    <string name="power_off_timer_warning">Časovač: televízor sa vypne o %1$s.</string>
+    <string name="power_off_any_key">Stlač ľubovoľné tlačidlo, ak chceš pozerať ďalej.</string>
+    <string name="power_off_cancelled">Televízor zostane zapnutý.</string>
+    <string name="power_off_timer_set">Televízor sa vypne o %1$s.</string>
+    <string name="power_off_timer_cancelled">Časovač vypnutia zrušený.</string>
+    <string name="power_off_no_timer">Časovač vypnutia nie je nastavený.</string>
 </resources>

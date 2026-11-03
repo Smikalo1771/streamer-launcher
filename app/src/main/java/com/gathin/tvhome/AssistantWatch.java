@@ -44,6 +44,8 @@ final class AssistantWatch {
     private final Runnable settle = this::settled;
     /** The app in front before the Assistant came up, for "zavri" and "vypni to"; null on Home. */
     private String front;
+    /** The sleep timer and idle switch-off (HomeKeyService); null when off. */
+    PowerOff powerOff;
     /** Waits for the Assistant to leave: Back would only close the Assistant, the screensaver would sit under it. */
     private Runnable afterAssistant;
 
@@ -180,6 +182,12 @@ final class AssistantWatch {
                 break;
             case BACK:
                 whenAssistantLeaves(() -> service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK));
+                break;
+            case SLEEP_TIMER:
+                if (powerOff != null) powerOff.setTimer(c.value);
+                break;
+            case SLEEP_CANCEL:
+                if (powerOff != null) powerOff.cancelTimer();
                 break;
             case SCREENSAVER:
                 // The launcher's clock screen with the screensaver's pictures (the Streamer has no "start the

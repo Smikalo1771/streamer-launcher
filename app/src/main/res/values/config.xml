@@ -533,6 +533,9 @@
          music_apps app in front, music playing and no key for the screensaver delay (screen_off_timeout), the
          launcher opens its clock screen with the screensaver's pictures (MusicSaver). Any key goes back. -->
     <bool name="music_screensaver">true</bool>
+    <!-- idle_off_minutes: no key from the remote for this long while the screen is on (and no music app playing)
+         asks "Pozeráš ešte?" and switches the TV off 2 minutes later unless a key is pressed (PowerOff). 0 = never. -->
+    <integer name="idle_off_minutes">120</integer>
     <!-- Own app names for voice commands, "name:package" ("spusti telku" opens IPTV). Launcher settings > Voice
          names replaces this list once anything is changed there. -->
     <string-array name="voice_aliases" translatable="false">

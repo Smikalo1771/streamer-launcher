@@ -14,7 +14,7 @@ final class VoiceMatch {
     private VoiceMatch() {}
 
     enum Kind { OPEN, CLOSE, CLOSE_FRONT, SLEEP, HOME, BACK, MUTE, UNMUTE, VOLUME_UP, VOLUME_DOWN, VOLUME_SET, PAUSE, PLAY,
-        SCREENSAVER }
+        SCREENSAVER, SLEEP_TIMER, SLEEP_CANCEL }
 
     /** A command: what to do, the app for OPEN and CLOSE, the percent for VOLUME_SET. */
     static final class Command {
@@ -30,7 +30,8 @@ final class VoiceMatch {
 
         @Override
         public String toString() {
-            return kind + (pkg != null ? ":" + pkg : "") + (kind == Kind.VOLUME_SET ? ":" + value : "");
+            return kind + (pkg != null ? ":" + pkg : "")
+                    + (kind == Kind.VOLUME_SET || kind == Kind.SLEEP_TIMER ? ":" + value : "");
         }
     }
 
@@ -86,6 +87,13 @@ final class VoiceMatch {
                 "uber hlasitost", "snizit hlasitost", "quieter", "volume down", "turn it down",
                 "turn down the volume")) return new Command(Kind.VOLUME_DOWN, null, 0);
 
+        // Sleep timer: "vypni o 30 minút", "vypni za hodinu"; "zruš časovač" cancels it.
+        if (oneOf(s, "zrus casovac", "zrusit casovac", "zrus casovac vypnutia", "zrus vypnutie", "zrus vypinanie",
+                "nevypinaj", "nevypinej", "zrus casovac vypnuti", "cancel timer", "cancel the timer"))
+            return new Command(Kind.SLEEP_CANCEL, null, 0);
+        Integer timer = sleepTimer(s);
+        if (timer != null) return new Command(Kind.SLEEP_TIMER, null, timer);
+
         String asked = after(s, OPEN_WORDS);
         if (oneOf(asked != null ? asked : s, SCREENSAVER_WORDS)) return new Command(Kind.SCREENSAVER, null, 0);
 
@@ -121,6 +129,38 @@ final class VoiceMatch {
     static String match(String phrase, List<String[]> apps) {
         Command c = parse(phrase, apps);
         return c != null && c.kind == Kind.OPEN ? c.pkg : null;
+    }
+
+    /** "vypni o 30 minút", "vypni televízor za hodinu a pol", "turn off in 2 hours": minutes (1 to 600), or null. */
+    static Integer sleepTimer(String s) {
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("^(?:vypni|vypnut|vypnout|uspi|turn off|switch off)(?: (?:sa|se|tv|televizor|televiziu|televizi"
+                        + "|prehravac|to|the tv))? (?:o|za|v|in|after) (.+)$")
+                .matcher(s);
+        if (!m.find()) return null;
+        Integer minutes = minutes(m.group(1).trim());
+        return minutes != null && minutes >= 1 && minutes <= 600 ? minutes : null;
+    }
+
+    /** "30 minut", "hodinu", "2 hodiny", "hodinu a pol", "pol hodiny", "stvrt hodiny", "90 min": minutes, or null. */
+    static Integer minutes(String t) {
+        switch (t) {
+            case "hodinu": case "jednu hodinu": case "1 hodinu": case "an hour": case "one hour": case "1 hour": return 60;
+            case "pol hodiny": case "pul hodiny": case "half an hour": return 30;
+            case "stvrt hodiny": case "ctvrt hodiny": case "ctvrthodinu": case "stvrthodinu": return 15;
+            case "hodinu a pol": case "hodinu a pul": case "jeden a pol hodiny": case "jedna a pol hodiny": return 90;
+            case "dve hodiny": case "dva hodiny": case "two hours": return 120;
+            case "tri hodiny": case "three hours": return 180;
+            default: break;
+        }
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("^(\\d{1,3})(?: a pol| a pul)? (minut|minuty|minutu|min|minutes|minute|hodin|hodiny|hodinu|h|hours|hour)$")
+                .matcher(t);
+        if (!m.find()) return null;
+        int n = Integer.parseInt(m.group(1));
+        boolean hours = m.group(2).startsWith("h");
+        boolean half = t.contains(" a pol") || t.contains(" a pul");
+        return hours ? n * 60 + (half ? 30 : 0) : n;
     }
 
     /** "hlasitost 20", "hlasitost na 20", "volume 20", "hlasitost 20 percent": the percent, or null. */

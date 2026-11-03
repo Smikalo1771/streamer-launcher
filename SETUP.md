@@ -19,6 +19,10 @@ Výsledok:
   šetriča hneď, hudba hrá ďalej, tlačidlo vráti appku). Vlastné mená appiek („spusti telku“ → IPTV):
   Launcher settings > **Hlasové prezývky appiek** (predvolené `voice_aliases` v `config.xml`). Prezývka môže otvoriť aj
   web: `claude:https://claude.ai` – „otvor Claude“ otvorí claude.ai v prehliadači.
+- Časovač vypnutia hlasom: „vypni o 30 minút“, „vypni o hodinu a pol“, „vypni o 2 hodiny“; „zruš časovač“ ho zruší.
+  Minútu pred vypnutím sa dole na obrazovke ukáže odpočítavanie, ľubovoľné tlačidlo vypnutie zruší (`PowerOff`).
+- „Pozeráš ešte?“: keď 2 hodiny (`idle_off_minutes`) nikto nestlačí tlačidlo, ukáže sa odpočítavanie 2 minúty a potom
+  sa prehrávač aj TV vypnú. Ľubovoľné tlačidlo to zruší. Neplatí, keď vpredu hrá hudobná appka (`music_apps`).
 - Šetrič pri hudbe: Spotify a iné hudobné appky (`music_apps`) nedovolia systémový šetrič. Keď hrá hudba a 2 minúty
   (`screen_off_timeout`) nikto nestlačí tlačidlo, launcher pustí fotky šetriča sám (`MusicSaver`, `music_screensaver`). Číslo
   hlasitosti sa nastaviť nedá, hlasitosť drží TV alebo soundbar (CEC). Pri appkách to launcher robí za Asistenta. Asistent to sám nedokáže (`provider.OPEN` zlyhá, lebo pôvodný launcher je vypnutý).
@@ -366,4 +370,19 @@ adb -s $TV shell settings put secure screensaver_components com.filip.tvhome/com
 fotka mení. Kým priečinok `wallpapers/` existuje, `tvguard.sh` drží tento šetrič zapnutý (Ambient mode si ho pri
 aktualizácii vie vrátiť). Návrat k pôvodnému: zmaž `wallpapers/` a nastav
 `screensaver_components` na `com.google.android.apps.tv.dreamx/.service.Backdrop`.
+
+### Záloha a obnova celého prehrávača
+
+```sh
+./backup.sh                          # do backups/<dátum_čas>, asi 470 MB s APK
+NO_APKS=1 ./backup.sh                # bez APK, len nastavenia a fotky
+./restore.sh backups/<dátum_čas>     # na ten istý prehrávač po resete, alebo na iný
+```
+
+Záloha obsahuje nastavenia launchera (aj tlačidlá a hlasové prezývky), `config.json` a fotky šetriča, nastavenia TV,
+ktoré toto nastavenie mení, zoznam appiek a vypnutých balíkov, a APK appiek mimo Obchodu Play (IPTV, Nuvio, Kodi,
+Shizuku…), ktoré by sa po resete inak stratili. `restore.sh` nainštaluje launcher (`install.sh`), appky z APK,
+obnoví nastavenia, znova vypne balíky (pôvodný launcher posledný) a vypíše appky, ktoré treba stiahnuť z Obchodu Play.
+Pred obnovou zapni na prehrávači ladenie cez sieť (časť 2). Shizuku po obnove treba spustiť a povoliť (časť 7).
+Priečinok `backups/` je v `.gitignore`.
 

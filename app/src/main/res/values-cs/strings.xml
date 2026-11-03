@@ -197,4 +197,11 @@
     <string name="voice_alias_pick_app">Pro kterou aplikaci?</string>
     <string name="voice_alias_name_for">Přezdívka pro %1$s</string>
     <string name="voice_alias_hint">např. telka</string>
+    <string name="power_off_idle_warning">Díváte se ještě? Televize se vypne za %1$s.</string>
+    <string name="power_off_timer_warning">Časovač: televize se vypne za %1$s.</string>
+    <string name="power_off_any_key">Stiskněte libovolné tlačítko, pokud se chcete dívat dál.</string>
+    <string name="power_off_cancelled">Televize zůstane zapnutá.</string>
+    <string name="power_off_timer_set">Televize se vypne za %1$s.</string>
+    <string name="power_off_timer_cancelled">Časovač vypnutí zrušen.</string>
+    <string name="power_off_no_timer">Časovač vypnutí není nastaven.</string>
 </resources>

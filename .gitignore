@@ -4,3 +4,4 @@ build/
 app/build/
 *.apk
 .tv-address
+backups/

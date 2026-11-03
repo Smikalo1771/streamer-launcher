@@ -206,4 +206,11 @@
     <string name="voice_alias_pick_app">Which app?</string>
     <string name="voice_alias_name_for">Name for %1$s</string>
     <string name="voice_alias_hint">e.g. telly</string>
+    <string name="power_off_idle_warning">Still watching? The TV switches off in %1$s.</string>
+    <string name="power_off_timer_warning">Sleep timer: the TV switches off in %1$s.</string>
+    <string name="power_off_any_key">Press any button to keep watching.</string>
+    <string name="power_off_cancelled">The TV stays on.</string>
+    <string name="power_off_timer_set">The TV switches off in %1$s.</string>
+    <string name="power_off_timer_cancelled">Sleep timer cancelled.</string>
+    <string name="power_off_no_timer">No sleep timer is set.</string>
 </resources>

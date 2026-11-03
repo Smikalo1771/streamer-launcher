@@ -236,6 +236,16 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
+        <!-- backup.sh / restore.sh: Launcher settings to and from launcher-settings.json, from the adb shell only. -->
+        <receiver
+            android:name=".SettingsBackupReceiver"
+            android:exported="true"
+            android:permission="android.permission.WRITE_SECURE_SETTINGS">
+            <intent-filter>
+                <action android:name="com.gathin.tvhome.BACKUP" />
+                <action android:name="com.gathin.tvhome.RESTORE" />
+            </intent-filter>
+        </receiver>
         <receiver
             android:name=".GuardConfig"
             android:exported="true"
