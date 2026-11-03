@@ -56,6 +56,15 @@ fi
 out=$(sh $D/castwatch.sh)
 [ -n "$out" ] && log "cast: $out"
 
+# Screen saver with the car photos: the launcher's clock over its wallpapers/ collection (config.json clock_wallpaper).
+# Kept only while the collection is there; Ambient mode (dreamx) can put itself back when it updates.
+DREAM=$P/com.gathin.tvhome.ClockDream
+if [ -d /sdcard/Android/data/$P/files/wallpapers ] && [ "$(settings get secure screensaver_components)" != "$DREAM" ]; then
+  log "screen saver: was $(settings get secure screensaver_components), set to the launcher clock with photos"
+  settings put secure screensaver_components $DREAM
+  settings put secure screensaver_enabled 1
+fi
+
 # Screen saver after 2 min: Ambient mode (dreamx) puts 10 min back when it updates.
 t=$(settings get system screen_off_timeout)
 if [ "$t" != 120000 ]; then

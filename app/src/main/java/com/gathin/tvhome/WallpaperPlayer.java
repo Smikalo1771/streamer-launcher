@@ -65,7 +65,8 @@ final class WallpaperPlayer {
     WallpaperPlayer(Context context, FrameLayout root, Config config) {
         this.root = root;
         backgroundColor = config.backgroundColor;
-        files = new ArrayList<>(config.wallpapers);
+        // home_wallpaper false: the collection is the screensaver's only, Home keeps its own background.
+        files = config.homeWallpaper ? new ArrayList<>(config.wallpapers) : new ArrayList<>();
         interval = config.wallpaperRotationMinutes * 60_000L;
         bitmapConfig = config.wallpaperTrueColor ? Bitmap.Config.ARGB_8888 : Bitmap.Config.RGB_565;
         // The dim is painted into the picture (decode), so no full-screen shade layer is drawn on every frame.

@@ -61,6 +61,8 @@ final class ClockScene {
     private String order;
     private Map<String, Set<String>> moods;
     private String latitude, longitude;
+    /** screensaver_clock false: the clock and date stay hidden, only the pictures (or the glow) show. */
+    private boolean clockHidden;
 
     private final Runnable tick = new Runnable() {
         @Override
@@ -86,6 +88,7 @@ final class ClockScene {
     }
 
     void start() {
+        content.setVisibility(clockHidden ? View.INVISIBLE : View.VISIBLE);
         content.setAlpha(0f);
         content.post(() -> {
             placeClock();
@@ -116,6 +119,7 @@ final class ClockScene {
         } catch (RuntimeException e) {
             return;
         }
+        clockHidden = !cfg.screensaverClock;
         if (!cfg.clockWallpaper) {
             // clock_glow false: plain black behind the clock (OLED); the clock itself still moves every minute.
             if (!cfg.clockGlow) {

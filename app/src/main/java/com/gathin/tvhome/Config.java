@@ -258,6 +258,13 @@ final class Config {
     final boolean headerWhite;
     /** The clock screensaver over Home's wallpaper instead of the black glow (config.xml, clock_wallpaper). */
     final boolean clockWallpaper;
+    /**
+     * Home shows the wallpaper collection itself (config.json home_wallpaper, default true). false keeps Home as it
+     * is and shows the pictures only in the clock screensaver (clock_wallpaper): a screensaver-only collection.
+     */
+    boolean homeWallpaper = true;
+    /** The clock screensaver shows its clock and date (config.json screensaver_clock, default true); false: only the pictures. */
+    boolean screensaverClock = true;
     /** How dark the clock screensaver's wallpaper is, 0 to 90 % (config.xml, clock_wallpaper_dim). */
     final int clockWallpaperDim;
     /** The clock screensaver's coloured glow; false leaves the clock on plain black, e.g. for an OLED (config.xml, clock_glow). */
@@ -689,7 +696,7 @@ final class Config {
         Festival festival = json == null ? Festival.NONE : Festival.parse(string(json, "festival", ""),
                 string(json, "festival_until", ""), string(json, "greeting", ""), string(json, "accent_color", ""));
 
-        return new Config(dock, fillDock, hidden, libraryApps, libraryExcludedApps, liveTv, liveTvAction, liveTvInputId, packageMap(launchActions), packageMap(appLabels),
+        Config config = new Config(dock, fillDock, hidden, libraryApps, libraryExcludedApps, liveTv, liveTvAction, liveTvInputId, packageMap(launchActions), packageMap(appLabels),
                 packageMap(appBanners), panelService, panelAction, panelExtra, coocaaSources, inputAction, inputSources, inputUriScheme, Math.max(1, columns),
                 Math.max(0, rowsBelow), animations, advancedEffects, shamsi, greetingName, moduleCards, reducedMotion, bootToLiveTv,
                 openOnStartChoice, dockTitle, dockRow, topMenu, launcherSettingsButton, reorderButton, showNetworkPill, showInputsPill,
@@ -705,6 +712,9 @@ final class Config {
                 dateBelowClock, vpnPill, locale, powerOnHomeAlways, inputsConnectedOnly,
                 Math.max(0, Math.min(600, openOnStartNetworkWait)), iconOnlyVpn, gtvHome, gtvWatchNext,
                 Math.max(1, Math.min(50, gtvProgramsPerRow)));
+        config.homeWallpaper = json == null || bool(json, "home_wallpaper", true);
+        config.screensaverClock = json == null || bool(json, "screensaver_clock", true);
+        return config;
     }
 
     /**

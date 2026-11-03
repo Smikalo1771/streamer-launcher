@@ -329,3 +329,35 @@ data:
 Napríklad automatizácia „o 20:00 zapni TV a spusti IPTV“: `remote.turn_on` bez `activity` (zobudí prehrávač a cez
 HDMI-CEC zapne TV), potom to isté s `activity`. Nuvio: `market://launch?id=com.nuvio.tv`. Z PC to isté cez ADB:
 `adb -s $TV shell am start -a android.intent.action.VIEW -d market://launch?id=com.nuvio.tv`.
+
+### Šetrič s fotkami
+
+Šetrič launchera (`ClockDream`) ukazuje fotky z priečinka `wallpapers/` a každú minútu prepne na ďalšiu.
+Hodiny a dátum sú vypnuté (`screensaver_clock`: `false`). Domovská obrazovka fotky nepoužíva (`home_wallpaper`: `false`). U nás je tam 26 fotiek áut
+v 3840×2160 z Wikimedia Commons (licencie CC BY-SA a podobné, autori v `wallpapers/CREDITS.txt`).
+
+```sh
+D=/sdcard/Android/data/com.filip.tvhome/files
+adb -s $TV push <priečinok s fotkami>/. $D/wallpapers/
+adb -s $TV push config.json $D/config.json
+adb -s $TV shell settings put secure screensaver_components com.filip.tvhome/com.gathin.tvhome.ClockDream
+```
+
+`config.json`:
+
+```json
+{
+  "wallpaper_rotation_minutes": 1,
+  "wallpaper_order": "shuffle",
+  "clock_wallpaper": true,
+  "clock_wallpaper_dim": 0,
+  "screensaver_clock": false,
+  "home_wallpaper": false
+}
+```
+
+`screensaver_clock`: `true` vráti hodiny a dátum, `clock_wallpaper_dim` (0 až 90 %) potom stmaví fotku pod nimi, `wallpaper_rotation_minutes` určuje, ako často sa
+fotka mení. Kým priečinok `wallpapers/` existuje, `tvguard.sh` drží tento šetrič zapnutý (Ambient mode si ho pri
+aktualizácii vie vrátiť). Návrat k pôvodnému: zmaž `wallpapers/` a nastav
+`screensaver_components` na `com.google.android.apps.tv.dreamx/.service.Backdrop`.
+
