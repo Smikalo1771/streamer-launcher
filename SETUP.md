@@ -16,7 +16,11 @@ Výsledok:
 - Hlas: mikrofón na ovládači otvára Google Asistenta. Tieto príkazy vykoná launcher (`VoiceMatch`):
   otvor/spusti/zapni *appku*, vypni/zavri *appku*, zavri (appka vpredu), vypni (TV do pohotovosti, TV sa vypne
   cez HDMI-CEC), domov, späť, ztlum / vypni zvuk, zapni zvuk, hlasitejšie / tišie, pauza, pokračuj, spusti šetrič (fotky
-  šetriča hneď, hudba hrá ďalej, tlačidlo vráti appku). Číslo
+  šetriča hneď, hudba hrá ďalej, tlačidlo vráti appku). Vlastné mená appiek („spusti telku“ → IPTV):
+  Launcher settings > **Hlasové prezývky appiek** (predvolené `voice_aliases` v `config.xml`). Prezývka môže otvoriť aj
+  web: `claude:https://claude.ai` – „otvor Claude“ otvorí claude.ai v prehliadači.
+- Šetrič pri hudbe: Spotify a iné hudobné appky (`music_apps`) nedovolia systémový šetrič. Keď hrá hudba a 2 minúty
+  (`screen_off_timeout`) nikto nestlačí tlačidlo, launcher pustí fotky šetriča sám (`MusicSaver`, `music_screensaver`). Číslo
   hlasitosti sa nastaviť nedá, hlasitosť drží TV alebo soundbar (CEC). Pri appkách to launcher robí za Asistenta. Asistent to sám nedokáže (`provider.OPEN` zlyhá, lebo pôvodný launcher je vypnutý).
   `HomeKeyService` počas zobrazenia Asistenta číta rozpoznaný text (`AssistantWatch`, `voice_open_apps` v
   `config.xml`). Ostatné otázky vybaví Asistent. Skúška bez hlasu:
@@ -249,7 +253,7 @@ staré skripty, prepne HDMI a spustí `cast-fix.sh`. Ručne:
 - Skutočným ovládačom vyskúšaj tlačidlá YouTube, Netflix a hviezdičku. Stlačenia cez ADB nestačia.
 - Telefón aj PC musia byť v sieti, kde je TV. Hľadanie castu (mDNS) nejde medzi dvoma sieťami.
 
-Oprava castu z PC, napríklad keď Shizuku nebeží: `TV=$TV ./cast-fix.sh`.
+Oprava castu z PC, napríklad keď Shizuku nebeží: `./cast-fix.sh` (spustí na TV `castwatch.sh` a vynúti opravu).
 
 ## 10. Záchrana a návrat
 
@@ -333,7 +337,8 @@ HDMI-CEC zapne TV), potom to isté s `activity`. Nuvio: `market://launch?id=com.
 
 ### Šetrič s fotkami
 
-Šetrič launchera (`ClockDream`) ukazuje fotky z priečinka `wallpapers/` a každú minútu prepne na ďalšiu.
+Šetrič launchera (`ClockDream`) ukazuje fotky z priečinka `wallpapers/`, začne náhodnou, každú minútu ju prelínaním
+vymení za ďalšiu a fotky sa pri tom pomaly približujú a vzďaľujú.
 Hodiny a dátum sú vypnuté (`screensaver_clock`: `false`). Domovská obrazovka fotky nepoužíva (`home_wallpaper`: `false`). U nás je tam 26 fotiek áut
 v 3840×2160 z Wikimedia Commons (licencie CC BY-SA a podobné, autori v `wallpapers/CREDITS.txt`).
 

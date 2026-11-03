@@ -110,15 +110,6 @@
             </intent-filter>
         </activity>
 
-        <!-- The remote's voice button ("voice" in app_keys): speech input, then the named app or Google Assistant.
-             Exported so Home Assistant or adb can start it too: am start -n <package>/com.gathin.tvhome.VoiceLaunchActivity -->
-        <activity
-            android:name=".VoiceLaunchActivity"
-            android:exported="true"
-            android:taskAffinity=""
-            android:excludeFromRecents="true"
-            android:launchMode="singleTop"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
         <activity
             android:name=".LauncherSettingsActivity"
             android:exported="false"

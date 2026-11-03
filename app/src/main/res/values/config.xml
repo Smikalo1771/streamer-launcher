@@ -529,4 +529,26 @@
          opens it, because the Assistant cannot with the stock launcher disabled. HomeKeyService reads the words the
          Assistant shows (AssistantWatch); other questions stay with the Assistant. -->
     <bool name="voice_open_apps">true</bool>
+    <!-- music_screensaver: music apps keep the screen on, so the system screensaver never starts over them. With a
+         music_apps app in front, music playing and no key for the screensaver delay (screen_off_timeout), the
+         launcher opens its clock screen with the screensaver's pictures (MusicSaver). Any key goes back. -->
+    <bool name="music_screensaver">true</bool>
+    <!-- Own app names for voice commands, "name:package" ("spusti telku" opens IPTV). Launcher settings > Voice
+         names replaces this list once anything is changed there. -->
+    <string-array name="voice_aliases" translatable="false">
+        <item>telka:com.example.iptvplayer</item>
+        <item>televizia:com.example.iptvplayer</item>
+        <item>televize:com.example.iptvplayer</item>
+        <item>filmy:com.nuvio.tv</item>
+        <item>hudba:com.spotify.tv.android</item>
+        <item>claude:https://claude.ai</item>
+    </string-array>
+    <string-array name="music_apps" translatable="false">
+        <item>com.spotify.tv.android</item>
+        <item>com.google.android.youtube.tvmusic</item>
+        <item>tunein.player</item>
+        <item>deezer.android.tv</item>
+        <item>com.aspiro.tidal</item>
+        <item>com.soundcloud.android</item>
+    </string-array>
 </resources>

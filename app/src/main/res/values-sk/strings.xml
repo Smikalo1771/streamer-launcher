@@ -186,8 +186,16 @@
     <string name="gtv_watch_next">Pokračovať v pozeraní</string>
     <string name="buttons_turned_on">Tlačidlá na ovládači boli vypnuté, znova som ich zapol.</string>
     <string name="buttons_off">Tlačidlá na ovládači (YouTube, Netflix, hviezdička) nefungujú: zapni pomocníka launchera v Nastavenia > Prístupnosť, alebo z PC spusti FIX=1 ./health.sh.</string>
-    <string name="voice_prompt">Povedz názov appky alebo sa spýtaj Googlu</string>
     <string name="voice_opening">Otváram %1$s</string>
     <string name="voice_closing">Zatváram %1$s</string>
     <string name="voice_volume_steps">Hlasitosť riadi televízor: povedz hlasnejšie alebo tišie.</string>
+    <string name="voice_aliases_label">Hlasové prezývky appiek</string>
+    <string name="voice_aliases_state">Hlasové prezývky: %1$s</string>
+    <string name="voice_alias_item">%1$s → %2$s</string>
+    <string name="voice_alias_add">+ Pridať prezývku</string>
+    <string name="voice_alias_remove">Odstrániť prezývku „%1$s“?</string>
+    <string name="voice_alias_remove_ok">Odstrániť</string>
+    <string name="voice_alias_pick_app">Pre ktorú appku?</string>
+    <string name="voice_alias_name_for">Prezývka pre %1$s</string>
+    <string name="voice_alias_hint">napr. telka</string>
 </resources>

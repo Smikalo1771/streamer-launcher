@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
-# Restore the Cast receiver's factory credentials after a reboot.
-# The credentials live in a provider inside setupwraith, which stays disabled so its RecoveryActivity
-# cannot claim Home; they survive only in the receiver's process, so this runs again after every reboot.
-# Normally not needed: the launcher (TvGuard) runs tv/tvguard.sh through Shizuku about a minute after every
-# boot and every 10 min, which does the same on the TV. Use this when Shizuku is not running.
-# Usage: TV=<ip>:5555 ./cast-fix.sh
+# Repair casting from the PC: runs the TV's own watchdog (tv/castwatch.sh) right now, forcing a repair.
+# Normally not needed: the launcher (TvGuard) runs it through Shizuku after every boot and every 10 min.
+# Use this when Shizuku is not running, or after `./health.sh` reports "cert 0 B".
+# Usage: ./cast-fix.sh            (finds the TV itself; TV=<ip>:5555 ./cast-fix.sh for a given one)
 set -euo pipefail
-TV=${TV:?set TV=<ip>:5555}
-A="adb -s $TV shell"
-adb connect "$TV" >/dev/null
-$A am force-stop com.google.android.apps.mediashell
-$A pm enable --user 0 com.google.android.tungsten.setupwraith >/dev/null
-sleep 8
-$A pm disable-user --user 0 com.google.android.tungsten.setupwraith >/dev/null
-if $A logcat -d 2>/dev/null | grep -q ClientAuthSigner; then echo "casting restored"; else echo "signer not seen; run again"; fi
+cd "$(dirname "$0")"
+export MSYS_NO_PATHCONV=1   # Git Bash: keep /data/... paths as they are
+source tv/find-tv.sh
+
+# The current watchdog, with LF line ends (a CRLF checkout on Windows would break sh on the TV).
+tmp=$(mktemp)
+tr -d '\r' < tv/castwatch.sh > "$tmp"
+"$ADB" -s "$TV" push "$(hostpath "$tmp")" /data/local/tmp/castwatch.sh >/dev/null 2>&1
+rm -f "$tmp"
+# Forget the last repaired receiver, so the watchdog repairs this one even if it looks fine.
+"$ADB" -s "$TV" shell "rm -f /data/local/tmp/castwatch.pid; sh /data/local/tmp/castwatch.sh"

@@ -6,7 +6,6 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
@@ -46,6 +45,7 @@ public final class LauncherSettingsActivity extends Activity {
     private TextView openOnStartChoice;
     /** Rows for ButtonApps.BUTTONS, in the same order. */
     private final TextView[] buttonChoices = new TextView[ButtonApps.BUTTONS.length];
+    private TextView voiceAliasesChoice;
     private static final int[] BUTTON_ROWS = {R.id.youtubeButtonChoice, R.id.netflixButtonChoice, R.id.starButtonChoice};
     private static final int[] BUTTON_LABELS = {R.string.youtube_button_label, R.string.netflix_button_label,
             R.string.star_button_label};
@@ -160,6 +160,8 @@ public final class LauncherSettingsActivity extends Activity {
             buttonChoices[i] = findViewById(BUTTON_ROWS[i]);
             buttonChoices[i].setOnClickListener(v -> showButtonMenu(code, label));
         }
+        voiceAliasesChoice = findViewById(R.id.voiceAliasesChoice);
+        voiceAliasesChoice.setOnClickListener(v -> showVoiceAliases());
         findViewById(R.id.backupChoice).setOnClickListener(v -> {
             boolean saved = SettingsBackup.save(this);
             Toast.makeText(this, saved ? getString(R.string.backup_saved, SettingsBackup.file(this).getPath())
@@ -304,25 +306,10 @@ public final class LauncherSettingsActivity extends Activity {
                 .show();
     }
 
-    /** Off, then every app with a TV entry point by name. Saved at once; it is read on the next boot. */
-    /** TV apps, sorted by name: {label, package}, without this launcher. */
-    private List<String[]> tvApps() {
-        PackageManager pm = getPackageManager();
-        List<String[]> apps = new ArrayList<>();
-        Intent tv = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER);
-        for (ResolveInfo r : pm.queryIntentActivities(tv, 0)) {
-            String pkg = r.activityInfo.packageName;
-            if (pkg.equals(getPackageName())) continue;
-            boolean seen = false;
-            for (String[] a : apps) seen |= a[1].equals(pkg);
-            if (!seen) apps.add(new String[]{r.loadLabel(pm).toString(), pkg});
-        }
-        Collections.sort(apps, (a, b) -> a[0].compareToIgnoreCase(b[0]));
-        return apps;
-    }
 
+    /** Off, then every app with a TV entry point by name. Saved at once; it is read on the next boot. */
     private void showOpenOnStartPicker() {
-        List<String[]> apps = tvApps();
+        List<String[]> apps = InstalledApps.tv(this);
         String[] labels = new String[apps.size() + 1];
         labels[0] = getString(R.string.off);
         String current = choices.getString(OpenOnStart.KEY, "");
@@ -358,6 +345,67 @@ public final class LauncherSettingsActivity extends Activity {
         recreate();
     }
 
+    /** Own app names for voice commands: each one to remove, then Add. Saved at once; read by the next command. */
+    private void showVoiceAliases() {
+        List<String[]> aliases = VoiceAliases.load(this);
+        List<String[]> apps = InstalledApps.all(this);
+        String[] items = new String[aliases.size() + 1];
+        for (int i = 0; i < aliases.size(); i++) {
+            items[i] = getString(R.string.voice_alias_item, aliases.get(i)[0],
+                    InstalledApps.label(apps, aliases.get(i)[1]));
+        }
+        items[aliases.size()] = getString(R.string.voice_alias_add);
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.voice_aliases_label)
+                .setItems(items, (dialog, which) -> {
+                    if (which == aliases.size()) {
+                        pickAliasApp(aliases);
+                        return;
+                    }
+                    String[] alias = aliases.get(which);
+                    new AlertDialog.Builder(this)
+                            .setMessage(getString(R.string.voice_alias_remove, alias[0]))
+                            .setPositiveButton(R.string.voice_alias_remove_ok, (d, w) -> {
+                                aliases.remove(which);
+                                VoiceAliases.save(this, aliases);
+                                refresh();
+                            })
+                            .setNegativeButton(android.R.string.cancel, null)
+                            .show();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    /** Add an alias: the app first, then its name (typed, or spoken through the keyboard's microphone). */
+    private void pickAliasApp(List<String[]> aliases) {
+        List<String[]> apps = InstalledApps.tv(this);
+        String[] labels = new String[apps.size()];
+        for (int i = 0; i < apps.size(); i++) labels[i] = apps.get(i)[0];
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.voice_alias_pick_app)
+                .setItems(labels, (dialog, which) -> {
+                    String[] app = apps.get(which);
+                    android.widget.EditText name = new android.widget.EditText(this);
+                    name.setSingleLine(true);
+                    name.setHint(R.string.voice_alias_hint);
+                    new AlertDialog.Builder(this)
+                            .setTitle(getString(R.string.voice_alias_name_for, app[0]))
+                            .setView(name)
+                            .setPositiveButton(android.R.string.ok, (d, w) -> {
+                                String text = name.getText().toString().trim();
+                                if (text.isEmpty() || text.contains(":")) return;
+                                aliases.add(new String[] {text, app[1]});
+                                VoiceAliases.save(this, aliases);
+                                refresh();
+                            })
+                            .setNegativeButton(android.R.string.cancel, null)
+                            .show();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
     /** A remote button: what a press opens and what a hold opens, each picked on its own. */
     private void showButtonMenu(int keycode, int title) {
         String[] items = {
@@ -373,7 +421,7 @@ public final class LauncherSettingsActivity extends Activity {
 
     /** The app a press or hold of a remote button opens: Off, or a TV app. Takes effect at once (HomeKeyService). */
     private void showButtonPicker(int keycode, boolean hold, int title) {
-        List<String[]> apps = tvApps();
+        List<String[]> apps = InstalledApps.tv(this);
         String[] labels = new String[apps.size() + 1];
         labels[0] = getString(R.string.off);
         String current = buttonPackage(keycode, hold);
@@ -465,6 +513,11 @@ public final class LauncherSettingsActivity extends Activity {
                         : wallpaperCurrent != null ? wallpaperCurrent
                         : getString(R.string.wallpaper_theme_default)));
         openOnStartChoice.setText(getString(R.string.open_on_start_state, openOnStartLabel()));
+        List<String[]> aliases = VoiceAliases.load(this);
+        StringBuilder names = new StringBuilder();
+        for (String[] a : aliases) names.append(names.length() > 0 ? ", " : "").append(a[0]);
+        voiceAliasesChoice.setText(getString(R.string.voice_aliases_state,
+                names.length() > 0 ? names.toString() : getString(R.string.off)));
         for (int i = 0; i < ButtonApps.BUTTONS.length; i++) {
             int code = ButtonApps.BUTTONS[i];
             String hold = buttonPackage(code, true);

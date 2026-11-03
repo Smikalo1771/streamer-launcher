@@ -5,8 +5,7 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Reads a spoken phrase into a TV command, for what Google Assistant heard (AssistantWatch) or the launcher's own
- * voice prompt (VoiceLaunchActivity). On the Streamer the Assistant hears Czech and Slovak fine but, with the stock
+ * Reads a spoken phrase into a TV command, for what Google Assistant heard (AssistantWatch). On the Streamer the Assistant hears Czech and Slovak fine but, with the stock
  * launcher disabled and no Slovak support, does not act on "otevři IPTV", "vypni IPTV" or "vypni". The launcher
  * does: open or close an app, standby, Home, Back, mute, volume, pause and play. Anything else is null and stays
  * with the Assistant. Case, accents and punctuation don't matter; app names may be misheard by one letter in five.
@@ -118,7 +117,7 @@ final class VoiceMatch {
         return pkg != null ? new Command(Kind.OPEN, pkg, 0) : null;
     }
 
-    /** The package of the app the phrase asks to open, or null. Kept for the launcher's own prompt. */
+    /** The package of the app the phrase asks to open, or null. */
     static String match(String phrase, List<String[]> apps) {
         Command c = parse(phrase, apps);
         return c != null && c.kind == Kind.OPEN ? c.pkg : null;

@@ -194,8 +194,16 @@
     <string name="gtv_watch_next">Continue watching</string>
     <string name="buttons_turned_on">Remote buttons were off; turned them on again.</string>
     <string name="buttons_off">Remote buttons (YouTube, Netflix, star) are off: turn on the launcher helper in Settings &gt; Accessibility, or run FIX=1 ./health.sh from the PC.</string>
-    <string name="voice_prompt">Say an app, or ask Google</string>
     <string name="voice_opening">Opening %1$s</string>
     <string name="voice_closing">Closing %1$s</string>
     <string name="voice_volume_steps">The TV sets its own volume: say louder or quieter.</string>
+    <string name="voice_aliases_label">Voice names for apps</string>
+    <string name="voice_aliases_state">Voice names: %1$s</string>
+    <string name="voice_alias_item">%1$s → %2$s</string>
+    <string name="voice_alias_add">+ Add a name</string>
+    <string name="voice_alias_remove">Remove the name “%1$s”?</string>
+    <string name="voice_alias_remove_ok">Remove</string>
+    <string name="voice_alias_pick_app">Which app?</string>
+    <string name="voice_alias_name_for">Name for %1$s</string>
+    <string name="voice_alias_hint">e.g. telly</string>
 </resources>

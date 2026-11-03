@@ -10,6 +10,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.LayerDrawable;
+import android.graphics.drawable.TransitionDrawable;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.DisplayMetrics;
@@ -33,6 +34,10 @@ import java.util.Set;
 final class ClockScene {
 
     private static final long MOVE_MS = 60_000L;
+    /** A new picture fades in over the last one for this long. */
+    private static final int FADE_MS = 2500;
+    /** The pictures slowly zoom between 100 % and this, in and out in turn (a Ken Burns drift). */
+    private static final float DRIFT_SCALE = 1.08f;
     /** The glow's colour change: 16 steps over 8 s. Animated per frame it redrew the full-screen gradient ~480 times. */
     private static final int GLOW_STEPS = 16;
     private static final long GLOW_STEP_MS = 500L;
@@ -102,6 +107,7 @@ final class ClockScene {
     void stop() {
         handler.removeCallbacksAndMessages(null);   // the tick and any glow steps still queued
         content.animate().cancel();
+        ambient.animate().cancel();
         wallpaperGeneration++;   // a decode still running must not attach its picture to a stopped scene
     }
 
@@ -139,7 +145,9 @@ final class ClockScene {
             String shown = ctx.getSharedPreferences("wallpaper_rotation", Context.MODE_PRIVATE)
                     .getString("image", "");
             File current = WallpaperRotation.find(rotation, shown);
-            wallpaperFile = current != null ? current : rotation.get(0);
+            // A screensaver-only collection (home_wallpaper false) has nothing on Home to follow: start anywhere.
+            wallpaperFile = !cfg.homeWallpaper ? rotation.get(random.nextInt(rotation.size()))
+                    : current != null ? current : rotation.get(0);
             // Home only rotates while it is visible, so the screensaver carries the rotation on
             // itself; without this it holds one picture for as long as it is up.
             rotationMs = cfg.wallpaperRotationMinutes * 60_000L;
@@ -171,8 +179,19 @@ final class ClockScene {
                 // As the image, not the background: a background is stretched to the view, so a picture of
                 // another shape than the screen would be distorted. centerCrop scales and crops it like Home.
                 ambient.setBackground(null);
-                ambient.setImageDrawable(new LayerDrawable(new Drawable[]{
-                        new BitmapDrawable(res, bmp), new ColorDrawable(shade)}));
+                Drawable next = new LayerDrawable(new Drawable[]{new BitmapDrawable(res, bmp), new ColorDrawable(shade)});
+                Drawable prev = ambient.getDrawable();
+                // The last picture of the previous fade, not the fade itself, so fades never nest.
+                if (prev instanceof TransitionDrawable) prev = ((TransitionDrawable) prev).getDrawable(1);
+                if (prev != null) {
+                    TransitionDrawable fade = new TransitionDrawable(new Drawable[]{prev, next});
+                    fade.setCrossFadeEnabled(true);
+                    ambient.setImageDrawable(fade);
+                    fade.startTransition(FADE_MS);
+                } else {
+                    ambient.setImageDrawable(next);
+                }
+                drift();
             });
         }, "clock-wallpaper").start();
     }
@@ -200,6 +219,17 @@ final class ClockScene {
         } catch (Exception | OutOfMemoryError failure) {
             return null;
         }
+    }
+
+    /**
+     * The picture's slow zoom, towards the other end each time (in, then out), lasting one picture's turn. Picking up
+     * from the current scale keeps it smooth across the fade to the next picture.
+     */
+    private void drift() {
+        float target = ambient.getScaleX() > (1f + DRIFT_SCALE) / 2 ? 1f : DRIFT_SCALE;
+        long duration = rotationMs > 0 ? rotationMs + FADE_MS : 10 * MOVE_MS;
+        ambient.animate().scaleX(target).scaleY(target).setDuration(duration)
+                .setInterpolator(new android.view.animation.LinearInterpolator()).withLayer().start();
     }
 
     /** Step to the next picture once its turn is up; the tick already runs every minute. */

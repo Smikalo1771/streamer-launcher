@@ -63,6 +63,8 @@ public class HomeKeyService extends AccessibilityService {
     private Map<Integer, String> appKeys = Collections.emptyMap();
     /** voice_open_apps: opens the app Google Assistant was asked for (AssistantWatch); null when off. */
     private AssistantWatch assistantWatch;
+    /** music_screensaver: the photo screensaver over a music app after the screensaver delay (MusicSaver); null when off. */
+    private MusicSaver musicSaver;
     private Map<Integer, String> appScancodes = Collections.emptyMap();
     private Map<Integer, String> holdAppKeys = Collections.emptyMap();
     private Map<Integer, String> holdAppScancodes = Collections.emptyMap();
@@ -246,6 +248,19 @@ public class HomeKeyService extends AccessibilityService {
                 setServiceInfo(voice);
             }
         }
+        // music_screensaver: window changes tell which app is in front, keys tell when the TV was last used.
+        if (getResources().getBoolean(R.bool.music_screensaver)) {
+            if (musicSaver == null) {
+                musicSaver = new MusicSaver(this, new java.util.HashSet<>(
+                        java.util.Arrays.asList(getResources().getStringArray(R.array.music_apps))));
+            }
+            musicSaver.start();
+            AccessibilityServiceInfo music = getServiceInfo();
+            if (music != null) {
+                music.eventTypes |= AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED;
+                setServiceInfo(music);
+            }
+        }
         if (!stockHome.isEmpty() || !powerOnLiveTv.isEmpty()) probeAtBoot();
         armStandbyExit();
         holdAppKeys = RemoteKeys.parseHoldAppKeys(config.appKeys);
@@ -273,6 +288,7 @@ public class HomeKeyService extends AccessibilityService {
 
     @Override
     protected boolean onKeyEvent(KeyEvent event) {
+        if (musicSaver != null) musicSaver.onKey();
         // power_on_home: the first key after power-on hands the TV to the user (power and wake keys don't count).
         if (powerOnUntil != 0 && event.getAction() == KeyEvent.ACTION_DOWN
                 && event.getKeyCode() != KeyEvent.KEYCODE_POWER && event.getKeyCode() != KeyEvent.KEYCODE_WAKEUP) {
@@ -316,6 +332,7 @@ public class HomeKeyService extends AccessibilityService {
     public boolean onUnbind(Intent intent) {
         RemoteKeys.release(this);
         if (assistantWatch != null) assistantWatch.stop();
+        if (musicSaver != null) musicSaver.stop();
         if (repairRecord && !steppingOut) ServiceRepair.disconnected(this, getClass());
         return super.onUnbind(intent);
     }
@@ -324,6 +341,7 @@ public class HomeKeyService extends AccessibilityService {
     public void onAccessibilityEvent(AccessibilityEvent event) {
         if (assistantWatch != null) assistantWatch.onEvent(event);
         if (event.getEventType() != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return;
+        if (musicSaver != null) musicSaver.onWindow(event.getPackageName());
         // app_keys "front:" entries: only activities count, so a toast or the volume bar doesn't change the app in front.
         if ((!frontAppKeys.isEmpty() || !frontAppScancodes.isEmpty())
                 && event.getPackageName() != null && event.getClassName() != null) {

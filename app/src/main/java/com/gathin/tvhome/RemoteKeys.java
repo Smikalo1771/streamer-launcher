@@ -343,7 +343,7 @@ final class RemoteKeys {
     static boolean isAction(String target) {
         switch (target) {
             case "back": case "home": case "recents": case "mute": case "sleep":
-            case "screensaver": case "settings": case "wifi": case "ignore": case "voice":
+            case "screensaver": case "settings": case "wifi": case "ignore":
                 return true;
             default:
                 return false;
@@ -378,10 +378,6 @@ final class RemoteKeys {
                 break;
             case "wifi":
                 start(ctx, SystemSettings.intent(ctx, Settings.ACTION_WIFI_SETTINGS));
-                break;
-            case "voice":
-                // Listen, then open the app that was named or ask Google Assistant (VoiceLaunchActivity).
-                start(ctx, new Intent(ctx, VoiceLaunchActivity.class));
                 break;
             default:
                 break;   // "ignore", or "sleep" below Android 9: consumed, nothing to do

@@ -2,12 +2,10 @@ package com.gathin.tvhome;
 
 import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.AccessibilityServiceInfo;
-import android.content.Intent;
 import android.media.AudioManager;
 import android.os.SystemClock;
 import android.view.KeyEvent;
 import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.accessibility.AccessibilityEvent;
@@ -30,7 +28,8 @@ import rikka.shizuku.Shizuku;
  * Content events are asked for only while the Assistant is in front, so other apps cost nothing.
  */
 final class AssistantWatch {
-    static final String ASSISTANT = VoiceLaunchActivity.ASSISTANT;
+    /** Google Assistant on Google TV. */
+    static final String ASSISTANT = "com.google.android.katniss";
     /** How long the shown words have to stay the same before they count as the final question. */
     static final long SETTLE_MS = 700;
     /** Opened once per question: the same words shown again within this time open nothing more. */
@@ -134,7 +133,17 @@ final class AssistantWatch {
         if (!watching || shown.isEmpty()) return;
         long now = SystemClock.elapsedRealtime();
         if (shown.equals(opened) && now - openedAt < REPEAT_MS) return;
-        List<String[]> apps = apps();
+        List<String[]> apps = InstalledApps.all(service);
+        // Own names from Launcher settings ("telka" for IPTV), after the real ones so messages show the real name.
+        for (String[] alias : VoiceAliases.load(service)) {
+            if (VoiceAliases.isWeb(alias[1])) {
+                apps.add(alias);
+                continue;
+            }
+            for (String[] app : new ArrayList<>(apps)) {
+                if (app[1].equals(alias[1])) { apps.add(alias); break; }
+            }
+        }
         VoiceMatch.Command command = VoiceMatch.parse(shown, apps);
         if (command == null) return;
         opened = shown;
@@ -146,7 +155,11 @@ final class AssistantWatch {
         AudioManager audio = service.getSystemService(AudioManager.class);
         switch (c.kind) {
             case OPEN:
-                say(R.string.voice_opening, label(apps, c.pkg));
+                if (VoiceAliases.isWeb(c.pkg)) {
+                    openPage(c.pkg, apps);
+                    break;
+                }
+                say(R.string.voice_opening, InstalledApps.label(apps, c.pkg));
                 RemoteKeys.launch(service, c.pkg);
                 break;
             case CLOSE:
@@ -154,7 +167,7 @@ final class AssistantWatch {
                 String pkg = c.kind == VoiceMatch.Kind.CLOSE ? c.pkg : front;
                 service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME);
                 if (pkg == null || pkg.equals(service.getPackageName())) break;
-                say(R.string.voice_closing, label(apps, pkg));
+                say(R.string.voice_closing, InstalledApps.label(apps, pkg));
                 forceStop(pkg);
                 break;
             }
@@ -226,6 +239,19 @@ final class AssistantWatch {
         }, 2500);
     }
 
+    /** A web alias: the page in the TV's browser (whichever answers web links). */
+    private void openPage(String url, List<String[]> apps) {
+        String name = url;
+        for (String[] a : apps) if (a[1].equals(url)) { name = a[0]; break; }
+        say(R.string.voice_opening, name);
+        try {
+            service.startActivity(new android.content.Intent(android.content.Intent.ACTION_VIEW,
+                    android.net.Uri.parse(url)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK));
+        } catch (RuntimeException e) {
+            Toast.makeText(service, R.string.not_available, Toast.LENGTH_SHORT).show();
+        }
+    }
+
     private static void mediaKey(AudioManager audio, int code) {
         if (audio == null) return;
         long t = SystemClock.uptimeMillis();
@@ -252,27 +278,7 @@ final class AssistantWatch {
         Toast.makeText(service, service.getString(text, arg), Toast.LENGTH_SHORT).show();
     }
 
-    private static String label(List<String[]> apps, String pkg) {
-        for (String[] a : apps) if (a[1].equals(pkg)) return a[0];
-        return pkg;
-    }
 
-    /** Installed apps with a launcher entry, TV or phone: {label, package}, without this launcher. */
-    private List<String[]> apps() {
-        PackageManager pm = service.getPackageManager();
-        List<String[]> apps = new ArrayList<>();
-        for (String category : new String[] {Intent.CATEGORY_LEANBACK_LAUNCHER, Intent.CATEGORY_LAUNCHER}) {
-            Intent main = new Intent(Intent.ACTION_MAIN).addCategory(category);
-            for (ResolveInfo r : pm.queryIntentActivities(main, 0)) {
-                String pkg = r.activityInfo.packageName;
-                if (pkg.equals(service.getPackageName())) continue;
-                boolean seen = false;
-                for (String[] a : apps) seen |= a[1].equals(pkg);
-                if (!seen) apps.add(new String[] {r.loadLabel(pm).toString(), pkg});
-            }
-        }
-        return apps;
-    }
 
     void stop() {
         handler.removeCallbacks(settle);
