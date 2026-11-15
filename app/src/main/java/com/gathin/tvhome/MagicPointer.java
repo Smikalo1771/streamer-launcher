@@ -66,8 +66,22 @@ final class MagicPointer {
     private int repeatKey = -1, repeatCount;
     /** Picks Gboard or the touch keyboard (KeyboardSwitch); null when the service has none. */
     volatile KeyboardSwitch keyboard;
+    /** Presses clickable nodes through accessibility (PointerClick); null when the service has none. */
+    volatile PointerClick clicker;
+    /** The node under the current press, clicked on release; null when the press is a touch. */
+    private android.view.accessibility.AccessibilityNodeInfo pressNode;
+    private long pressNodeTime;
     /** The press went to a keyboard switch: its release is dropped too. */
     private boolean pressSpent;
+    /**
+     * Focus was last moved by the wheel or an arrow key, with the pointer here: a wheel press before the pointer
+     * moves NAV_SLOP away is OK on the focused item, not a touch wherever the pointer happens to be.
+     */
+    private boolean navigating;
+    private float navX, navY;
+    private boolean centerDown;
+    private long centerDownTime;
+    private static final float NAV_SLOP = 160f;   // the hand drifts ~100 px while scrolling and pressing the wheel
 
     MagicPointer(Context context) {
         this.context = context.getApplicationContext();
@@ -178,14 +192,43 @@ final class MagicPointer {
         lastX = x;
         lastY = y;
         String type = m.optString("type");
+        if (navigating && Math.hypot(x - navX, y - navY) > NAV_SLOP) navigating = false;
         if ("mousedown".equals(type)) {
             if (touching) touchUp();
+            if (navigating) {
+                centerDown = true;
+                centerDownTime = SystemClock.uptimeMillis();
+                injectKey(new KeyEvent(centerDownTime, centerDownTime, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_CENTER,
+                        0, 0, virtualKeyboard(), 0, 0, InputDevice.SOURCE_DPAD));
+                return;
+            }
             KeyboardSwitch k = keyboard;
             pressSpent = k != null && k.onPointerDown(x, y);
             if (pressSpent) return;
+            PointerClick c = clicker;
+            pressNode = c == null ? null : c.nodeAt(x, y);
+            if (pressNode != null) {
+                pressNodeTime = SystemClock.uptimeMillis();
+                return;
+            }
             touchDownTime = SystemClock.uptimeMillis();
             touching = true;
             touch(MotionEvent.ACTION_DOWN, x, y);
+        } else if ("mouseup".equals(type) && centerDown) {
+            centerDown = false;
+            navigating = false;   // one OK per scroll: the next press is a touch again until the wheel turns
+            injectKey(new KeyEvent(centerDownTime, SystemClock.uptimeMillis(), KeyEvent.ACTION_UP,
+                    KeyEvent.KEYCODE_DPAD_CENTER, 0, 0, virtualKeyboard(), 0, 0, InputDevice.SOURCE_DPAD));
+        } else if ("mouseup".equals(type) && pressNode != null) {
+            boolean longPress = SystemClock.uptimeMillis() - pressNodeTime > 600;
+            PointerClick c = clicker;
+            boolean ok = c != null && c.clickAt(pressNode, x, y, longPress);
+            pressNode = null;
+            if (!ok) {   // the app refused the click: tap there instead
+                touchDownTime = SystemClock.uptimeMillis();
+                touch(MotionEvent.ACTION_DOWN, x, y);
+                touch(MotionEvent.ACTION_UP, x, y);
+            }
         } else if ("mouseup".equals(type) && pressSpent) {
             pressSpent = false;
         } else if ("mouseup".equals(type) && touching) {
@@ -202,12 +245,15 @@ final class MagicPointer {
     private void onWheel(JSONObject w) {
         int delta = w.optInt("delta");
         if (delta == 0) return;
+        // The wheel message carries the pointer in the same space as a press; the sensor stream may not.
+        startNavigating(mapX(w.optInt("x", (int) lastX)), mapY(w.optInt("y", (int) lastY)));
         int code = delta > 0 ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN;
         long now = SystemClock.uptimeMillis();
-        // The scan code tells KeyboardSwitch this arrow came from the wheel, not from an arrow key.
-        int scan = KeyboardSwitch.WHEEL_SCANCODE;
-        injectKey(new KeyEvent(now, now, KeyEvent.ACTION_DOWN, code, 0, 0, virtualKeyboard(), scan, 0, InputDevice.SOURCE_DPAD));
-        injectKey(new KeyEvent(now, now, KeyEvent.ACTION_UP, code, 0, 0, virtualKeyboard(), scan, 0, InputDevice.SOURCE_DPAD));
+        // KeyboardSwitch must not take this arrow for an arrow key: it skips arrows whose event time it is told here.
+        KeyboardSwitch k = keyboard;
+        if (k != null) k.wheelKeyTime = now;
+        injectKey(new KeyEvent(now, now, KeyEvent.ACTION_DOWN, code, 0, 0, virtualKeyboard(), 0, 0, InputDevice.SOURCE_DPAD));
+        injectKey(new KeyEvent(now, now, KeyEvent.ACTION_UP, code, 0, 0, virtualKeyboard(), 0, 0, InputDevice.SOURCE_DPAD));
     }
 
     private void onKey(JSONObject k) {
@@ -217,6 +263,7 @@ final class MagicPointer {
         long now = SystemClock.uptimeMillis();
         int source = isDpad(code) ? InputDevice.SOURCE_DPAD : InputDevice.SOURCE_KEYBOARD;
         if (down) {
+            if (code >= KeyEvent.KEYCODE_DPAD_UP && code <= KeyEvent.KEYCODE_DPAD_RIGHT) startNavigating(lastX, lastY);
             if (repeatKey == code) {
                 repeatCount++;
             } else {
@@ -231,6 +278,12 @@ final class MagicPointer {
                     virtualKeyboard(), 0, 0, source));
             repeatKey = -1;
         }
+    }
+
+    private void startNavigating(float x, float y) {
+        navigating = true;
+        navX = x;
+        navY = y;
     }
 
     private static int virtualKeyboard() {

@@ -20,7 +20,7 @@ import java.util.List;
  * ignores taps, so the Magic Remote pointer cannot press its keys; a touch keyboard (FlorisBoard) takes the taps but
  * has no D-pad focus. A pointer click on Gboard's window switches to the touch keyboard (that click is spent on the
  * switch), and an arrow key while the touch keyboard is up switches back to Gboard. Wheel notches are arrow keys too,
- * so MagicPointer marks them with WHEEL_SCANCODE and they don't count.
+ * so MagicPointer reports their event time (wheelKeyTime) and they don't count.
  *
  * Needs the touch keyboard installed and enabled (ime enable). Without it nothing changes.
  */
@@ -29,8 +29,8 @@ final class KeyboardSwitch {
     private static final String TAG = "KeyboardSwitch";
     static final String DPAD_IME = "com.google.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME";
     static final String TOUCH_IME = "dev.patrickgold.florisboard/.FlorisImeService";
-    /** Scan code MagicPointer puts on the arrow keys it makes from wheel notches. */
-    static final int WHEEL_SCANCODE = 0x7e57;
+    /** Event time of the last arrow MagicPointer made from a wheel notch, set just before it injects the key. */
+    volatile long wheelKeyTime = -1;
 
     private final AccessibilityService service;
     private final Handler main = new Handler(Looper.getMainLooper());
@@ -63,7 +63,7 @@ final class KeyboardSwitch {
         if (e.getAction() != KeyEvent.ACTION_DOWN || e.getRepeatCount() != 0) return;
         int code = e.getKeyCode();
         if (code < KeyEvent.KEYCODE_DPAD_UP || code > KeyEvent.KEYCODE_DPAD_RIGHT) return;
-        if (e.getScanCode() == WHEEL_SCANCODE) return;
+        if (e.getEventTime() == wheelKeyTime) return;
         if (!TOUCH_IME.equals(currentIme()) || imeBounds() == null) return;
         switchTo(DPAD_IME);
     }

@@ -264,6 +264,7 @@ public class HomeKeyService extends AccessibilityService {
             if (magicPointer == null) magicPointer = new MagicPointer(this);
             if (keyboardSwitch == null) keyboardSwitch = new KeyboardSwitch(this);
             magicPointer.keyboard = keyboardSwitch;
+            magicPointer.clicker = new PointerClick(this);
             magicPointer.start();
             if (magicAutoStart == null) magicAutoStart = new MagicAutoStart(this);
             magicAutoStart.start();
