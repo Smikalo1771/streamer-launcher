@@ -64,6 +64,10 @@ final class MagicPointer {
     private float lastX, lastY;
     private long keyDownTime;
     private int repeatKey = -1, repeatCount;
+    /** Picks Gboard or the touch keyboard (KeyboardSwitch); null when the service has none. */
+    volatile KeyboardSwitch keyboard;
+    /** The press went to a keyboard switch: its release is dropped too. */
+    private boolean pressSpent;
 
     MagicPointer(Context context) {
         this.context = context.getApplicationContext();
@@ -176,9 +180,14 @@ final class MagicPointer {
         String type = m.optString("type");
         if ("mousedown".equals(type)) {
             if (touching) touchUp();
+            KeyboardSwitch k = keyboard;
+            pressSpent = k != null && k.onPointerDown(x, y);
+            if (pressSpent) return;
             touchDownTime = SystemClock.uptimeMillis();
             touching = true;
             touch(MotionEvent.ACTION_DOWN, x, y);
+        } else if ("mouseup".equals(type) && pressSpent) {
+            pressSpent = false;
         } else if ("mouseup".equals(type) && touching) {
             touchUp();
         }
@@ -195,8 +204,10 @@ final class MagicPointer {
         if (delta == 0) return;
         int code = delta > 0 ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN;
         long now = SystemClock.uptimeMillis();
-        injectKey(new KeyEvent(now, now, KeyEvent.ACTION_DOWN, code, 0, 0, virtualKeyboard(), 0, 0, InputDevice.SOURCE_DPAD));
-        injectKey(new KeyEvent(now, now, KeyEvent.ACTION_UP, code, 0, 0, virtualKeyboard(), 0, 0, InputDevice.SOURCE_DPAD));
+        // The scan code tells KeyboardSwitch this arrow came from the wheel, not from an arrow key.
+        int scan = KeyboardSwitch.WHEEL_SCANCODE;
+        injectKey(new KeyEvent(now, now, KeyEvent.ACTION_DOWN, code, 0, 0, virtualKeyboard(), scan, 0, InputDevice.SOURCE_DPAD));
+        injectKey(new KeyEvent(now, now, KeyEvent.ACTION_UP, code, 0, 0, virtualKeyboard(), scan, 0, InputDevice.SOURCE_DPAD));
     }
 
     private void onKey(JSONObject k) {

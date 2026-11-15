@@ -69,6 +69,8 @@ public class HomeKeyService extends AccessibilityService {
     private MagicPointer magicPointer;
     /** magic_pointer: opens magic4pc on the TV whenever it shows this player's plain HDMI input; null when off. */
     private MagicAutoStart magicAutoStart;
+    /** magic_pointer: Gboard for arrow keys, the touch keyboard for the pointer; null when off. */
+    private KeyboardSwitch keyboardSwitch;
     /** Sleep timer and idle_off_minutes (PowerOff); null when neither can run. */
     private PowerOff powerOff;
     /** The key whose DOWN only cancelled a switch-off countdown: its UP is swallowed too. */
@@ -260,6 +262,8 @@ public class HomeKeyService extends AccessibilityService {
         }
         if (getResources().getBoolean(R.bool.magic_pointer)) {
             if (magicPointer == null) magicPointer = new MagicPointer(this);
+            if (keyboardSwitch == null) keyboardSwitch = new KeyboardSwitch(this);
+            magicPointer.keyboard = keyboardSwitch;
             magicPointer.start();
             if (magicAutoStart == null) magicAutoStart = new MagicAutoStart(this);
             magicAutoStart.start();
@@ -318,6 +322,7 @@ public class HomeKeyService extends AccessibilityService {
     @Override
     protected boolean onKeyEvent(KeyEvent event) {
         if (musicSaver != null) musicSaver.onKey();
+        if (keyboardSwitch != null) keyboardSwitch.onKey(event);
         // A key during the switch-off countdown only cancels it.
         if (event.getAction() == KeyEvent.ACTION_UP && event.getKeyCode() == swallowUp) {
             swallowUp = -1;
