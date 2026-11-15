@@ -46,6 +46,8 @@ dependencies {
     // Stop app with one press where Shizuku runs (AppStopper); without it the App info fallback stays.
     implementation 'dev.rikka.shizuku:api:13.1.5'
     implementation 'dev.rikka.shizuku:provider:13.1.5'
+    // magic_pointer (MagicPointer): IInputManager through Shizuku is a hidden API.
+    implementation 'org.lsposed.hiddenapibypass:hiddenapibypass:4.3'
     // Test only (never in the APK): plain JVM tests for the module card validators, src/test.
     testImplementation 'junit:junit:4.13.2'
 }

@@ -65,6 +65,10 @@ public class HomeKeyService extends AccessibilityService {
     private AssistantWatch assistantWatch;
     /** music_screensaver: the photo screensaver over a music app after the screensaver delay (MusicSaver); null when off. */
     private MusicSaver musicSaver;
+    /** magic_pointer: the LG Magic Remote over the network from the magic4pc webOS app (MagicPointer); null when off. */
+    private MagicPointer magicPointer;
+    /** magic_pointer: opens magic4pc on the TV whenever it shows this player's plain HDMI input; null when off. */
+    private MagicAutoStart magicAutoStart;
     /** Sleep timer and idle_off_minutes (PowerOff); null when neither can run. */
     private PowerOff powerOff;
     /** The key whose DOWN only cancelled a switch-off countdown: its UP is swallowed too. */
@@ -158,6 +162,8 @@ public class HomeKeyService extends AccessibilityService {
             standbyExit = null;
         }
         if (gamepads != null) gamepads.stop();
+        if (magicPointer != null) magicPointer.stop();
+        if (magicAutoStart != null) magicAutoStart.stop();
         if (consumeVolumeKeys) VolumeKeys.stop();
         super.onDestroy();
     }
@@ -251,6 +257,13 @@ public class HomeKeyService extends AccessibilityService {
                 voice.eventTypes |= AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED;
                 setServiceInfo(voice);
             }
+        }
+        if (getResources().getBoolean(R.bool.magic_pointer)) {
+            if (magicPointer == null) magicPointer = new MagicPointer(this);
+            magicPointer.start();
+            if (magicAutoStart == null) magicAutoStart = new MagicAutoStart(this);
+            magicAutoStart.start();
+            DevModeKeeper.start(this);   // keeps the TV's Developer Mode (and so magic4pc) from expiring
         }
         // music_screensaver: window changes tell which app is in front, keys tell when the TV was last used.
         if (getResources().getBoolean(R.bool.music_screensaver)) {
@@ -358,6 +371,8 @@ public class HomeKeyService extends AccessibilityService {
         RemoteKeys.release(this);
         if (assistantWatch != null) assistantWatch.stop();
         if (musicSaver != null) musicSaver.stop();
+        if (magicPointer != null) magicPointer.stop();
+        if (magicAutoStart != null) magicAutoStart.stop();
         if (powerOff != null) powerOff.stop();
         if (repairRecord && !steppingOut) ServiceRepair.disconnected(this, getClass());
         return super.onUnbind(intent);
