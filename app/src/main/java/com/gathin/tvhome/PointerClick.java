@@ -24,8 +24,13 @@ final class PointerClick {
         this.service = service;
     }
 
-    /** The smallest visible clickable node under (x, y) in an app window, or null. */
+    /**
+     * The smallest visible clickable node under (x, y) in an app window, or null. The cache is dropped first: the
+     * service gets no content events, so after the screen changed (a season tab picked, a row scrolled) the cached
+     * tree still shows the old state, where the tab now wanted was the selected, unclickable one.
+     */
     AccessibilityNodeInfo nodeAt(float x, float y) {
+        if (android.os.Build.VERSION.SDK_INT >= 34) service.clearCache();
         int px = (int) x, py = (int) y;
         try {
             List<AccessibilityWindowInfo> windows = service.getWindows();
@@ -68,26 +73,23 @@ final class PointerClick {
         return best;
     }
 
-    /**
-     * Clicks what is under (x, y) now. The service subscribes to no content events, so its node cache can still
-     * hold a row from before the last scroll: a click on such a stale node fails, and then the cache is dropped
-     * and the point looked up again.
-     */
+    /** Clicks the node found at the press, or what is under (x, y) now if that one is gone. */
     boolean clickAt(AccessibilityNodeInfo node, float x, float y, boolean longPress) {
         if (node != null && press(node, longPress)) return true;
-        if (android.os.Build.VERSION.SDK_INT >= 34) {
-            service.clearCache();
-        }
-        AccessibilityNodeInfo fresh = nodeAt(x, y);
+        AccessibilityNodeInfo fresh = nodeAt(x, y);   // the screen changed during the press: look again
         return fresh != null && press(fresh, longPress);
     }
 
     /** Clicks (or long-clicks) the node; false when the app refused. */
     boolean press(AccessibilityNodeInfo node, boolean longPress) {
         try {
-            node.performAction(AccessibilityNodeInfo.ACTION_FOCUS);
-            return node.performAction(longPress ? AccessibilityNodeInfo.ACTION_LONG_CLICK
+            boolean focused = node.performAction(AccessibilityNodeInfo.ACTION_FOCUS);
+            boolean ok = node.performAction(longPress ? AccessibilityNodeInfo.ACTION_LONG_CLICK
                     : AccessibilityNodeInfo.ACTION_CLICK);
+            Rect r = new Rect();
+            node.getBoundsInScreen(r);
+            Log.d(TAG, (longPress ? "long click " : "click ") + r.toShortString() + " focus=" + focused + " -> " + ok);
+            return ok;
         } catch (RuntimeException e) {
             Log.w(TAG, "press: " + e);
             return false;
