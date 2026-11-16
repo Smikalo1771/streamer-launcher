@@ -106,11 +106,31 @@ final class MagicPointer {
     private boolean dragging;
     private float lastSensorX, lastSensorY;   // the hand drifts ~100 px while scrolling and pressing the wheel
 
+    /** pointer_button_rows: package -> its button discs {x, y, r} in Left/Right order. */
+    private final java.util.Map<String, int[][]> buttonRows = new java.util.HashMap<>();
+    /** A button walk is running: presses meanwhile are dropped, so two walks never fight over the highlight. */
+    private final java.util.concurrent.atomic.AtomicBoolean walking = new java.util.concurrent.atomic.AtomicBoolean();
     /** pointer_ok_zones: package -> x right of which a press is OK, not a touch. */
     private final java.util.Map<String, Integer> okZones = new java.util.HashMap<>();
 
     MagicPointer(Context context) {
         this.context = context.getApplicationContext();
+        for (String entry : this.context.getResources().getStringArray(R.array.pointer_button_rows)) {
+            int bar = entry.indexOf('|');
+            if (bar <= 0) continue;
+            try {
+                String[] discs = entry.substring(bar + 1).split(";");
+                int[][] row = new int[discs.length][];
+                for (int i = 0; i < discs.length; i++) {
+                    String[] v = discs[i].trim().split(",");
+                    row[i] = new int[] {Integer.parseInt(v[0].trim()), Integer.parseInt(v[1].trim()),
+                            Integer.parseInt(v[2].trim())};
+                }
+                buttonRows.put(entry.substring(0, bar).trim(), row);
+            } catch (RuntimeException ignored) {
+                // a malformed entry is skipped
+            }
+        }
         for (String entry : this.context.getResources().getStringArray(R.array.pointer_ok_zones)) {
             int colon = entry.lastIndexOf(':');
             if (colon <= 0) continue;
@@ -241,6 +261,21 @@ final class MagicPointer {
             KeyboardSwitch k = keyboard;
             pressSpent = k != null && k.onPointerDown(x, y);
             if (pressSpent) return;
+            int[][] row = buttonRowAt(x, y);
+            int target = row == null ? -1 : buttonAt(row, x, y);
+            if (target >= 0) {
+                pressSpent = true;   // the release is dropped; the walk ends with its own OK
+                if (walking.compareAndSet(false, true)) {
+                    new Thread(() -> {
+                        try {
+                            walkTo(row, target);
+                        } finally {
+                            walking.set(false);
+                        }
+                    }, "ButtonWalk").start();
+                }
+                return;
+            }
             PointerClick c = clicker;
             pressNode = c == null ? null : c.nodeAt(x, y);
             if (pressNode != null) {
@@ -349,11 +384,111 @@ final class MagicPointer {
         injectKey(e);
     }
 
+    /** The button row of the app under (x, y), from pointer_button_rows; null for other apps. */
+    private int[][] buttonRowAt(float x, float y) {
+        PointerClick c = clicker;
+        if (buttonRows.isEmpty() || c == null) return null;
+        return buttonRows.get(c.appAt(x, y));
+    }
+
+    /** Index of the disc (x, y) is on, a little generous around it, or -1. */
+    private static int buttonAt(int[][] row, float x, float y) {
+        for (int i = 0; i < row.length; i++) {
+            if (Math.hypot(x - row[i][0], y - row[i][1]) <= row[i][2] * 1.5f) return i;
+        }
+        return -1;
+    }
+
+    /**
+     * Moves the app's own highlight to button target with Left/Right, then presses OK. Which disc is lit is read
+     * off the screen (Shizuku screencap): the lit one is bright, the others dark. OK goes only once the target is
+     * seen lit, so a wrong guess never activates another button; with no disc lit (the bar hidden) nothing is sent.
+     */
+    private void walkTo(int[][] row, int target) {
+        for (int attempt = 0; attempt < 3; attempt++) {
+            int lit = litButton(row);
+            if (lit < 0) {
+                Log.d(TAG, "walk: no lit button");
+                return;
+            }
+            if (lit == target) {
+                long now = SystemClock.uptimeMillis();
+                injectKey(new KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_CENTER, 0, 0,
+                        virtualKeyboard(), 0, 0, InputDevice.SOURCE_DPAD));
+                injectKey(new KeyEvent(now, now + 50, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_CENTER, 0, 0,
+                        virtualKeyboard(), 0, 0, InputDevice.SOURCE_DPAD));
+                Log.d(TAG, "walk: OK on " + target);
+                return;
+            }
+            int code = target > lit ? KeyEvent.KEYCODE_DPAD_RIGHT : KeyEvent.KEYCODE_DPAD_LEFT;
+            for (int i = Math.abs(target - lit); i > 0; i--) {
+                long now = SystemClock.uptimeMillis();
+                injectKey(new KeyEvent(now, now, KeyEvent.ACTION_DOWN, code, 0, 0, virtualKeyboard(), 0, 0,
+                        InputDevice.SOURCE_DPAD));
+                injectKey(new KeyEvent(now, now, KeyEvent.ACTION_UP, code, 0, 0, virtualKeyboard(), 0, 0,
+                        InputDevice.SOURCE_DPAD));
+                SystemClock.sleep(120);
+            }
+            SystemClock.sleep(200);
+        }
+        Log.d(TAG, "walk: gave up");
+    }
+
+    /** Index of the one disc drawn lit, or -1. Samples four points on each disc's ring, past its icon. */
+    private int litButton(int[][] row) {
+        String file = "/data/local/tmp/mp.raw";
+        StringBuilder cmd = new StringBuilder("screencap " + file + " && dd if=" + file + " bs=16 count=1 2>/dev/null");
+        int n = row.length * 4;
+        for (int[] d : row) {
+            int rr = d[2] * 6 / 10;
+            int[][] pts = {{d[0] + rr, d[1]}, {d[0] - rr, d[1]}, {d[0], d[1] - rr},
+                    {d[0] + rr * 7 / 10, d[1] + rr * 7 / 10}};
+            for (int[] p : pts) {
+                cmd.append("; dd if=").append(file).append(" bs=4 count=1 skip=").append(4 + p[1] * 1920 + p[0])
+                        .append(" 2>/dev/null");
+            }
+        }
+        byte[] out;
+        try {
+            Method newProcess = Shizuku.class.getDeclaredMethod("newProcess", String[].class, String[].class,
+                    String.class);
+            newProcess.setAccessible(true);
+            Process p = (Process) newProcess.invoke(null, new String[] {"sh", "-c", cmd.toString()}, null, null);
+            out = readAll(p.getInputStream());
+            p.waitFor();
+        } catch (Throwable t) {
+            Log.w(TAG, "screencap: " + t);
+            return -1;
+        }
+        ByteBuffer b = ByteBuffer.wrap(out).order(ByteOrder.LITTLE_ENDIAN);
+        if (out.length < 16 + n * 4 || b.getInt(0) != 1920) return -1;   // 1920-wide RGBA expected
+        int lit = -1;
+        for (int i = 0; i < row.length; i++) {
+            int sum = 0;
+            for (int j = 0; j < 4; j++) {
+                int o = 16 + (i * 4 + j) * 4;
+                sum += ((out[o] & 0xff) + (out[o + 1] & 0xff) + (out[o + 2] & 0xff)) / 3;
+            }
+            if (sum / 4 > 150) {
+                if (lit >= 0) return -1;   // two lit: not the bar we know
+                lit = i;
+            }
+        }
+        return lit;
+    }
+
+    private static byte[] readAll(java.io.InputStream in) throws java.io.IOException {
+        java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream();
+        byte[] buf = new byte[4096];
+        for (int n; (n = in.read(buf)) > 0; ) bytes.write(buf, 0, n);
+        return bytes.toByteArray();
+    }
+
     private boolean inOkZone(float x, float y) {
         PointerClick c = clicker;
         if (okZones.isEmpty() || c == null) return false;
         Integer from = okZones.get(c.appAt(x, y));
-        return from != null && x > from;
+        return from != null && x > from && c.overBareScreen(x, y);
     }
 
     private void startNavigating(float x, float y) {

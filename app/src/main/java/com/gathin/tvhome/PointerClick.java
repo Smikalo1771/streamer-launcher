@@ -49,6 +49,41 @@ final class PointerClick {
         return null;
     }
 
+    /**
+     * True when (x, y) is over bare video in an app window: the smallest visible node there covers most of the
+     * screen, so no button, text or slider of an on-screen overlay is under the pointer.
+     */
+    boolean overBareScreen(float x, float y) {
+        int px = (int) x, py = (int) y;
+        try {
+            Rect r = new Rect();
+            for (AccessibilityWindowInfo w : service.getWindows()) {   // topmost first
+                w.getBoundsInScreen(r);
+                if (!r.contains(px, py)) continue;
+                if (w.getType() != AccessibilityWindowInfo.TYPE_APPLICATION) return false;
+                long screen = (long) r.width() * r.height();
+                AccessibilityNodeInfo root = w.getRoot();
+                if (root == null) return false;
+                ArrayDeque<AccessibilityNodeInfo> todo = new ArrayDeque<>();
+                todo.add(root);
+                while (!todo.isEmpty()) {
+                    AccessibilityNodeInfo n = todo.poll();
+                    n.getBoundsInScreen(r);
+                    if (!r.contains(px, py) || !n.isVisibleToUser()) continue;
+                    if ((long) r.width() * r.height() < screen * 0.6) return false;
+                    for (int i = 0; i < n.getChildCount(); i++) {
+                        AccessibilityNodeInfo c = n.getChild(i);
+                        if (c != null) todo.add(c);
+                    }
+                }
+                return true;
+            }
+        } catch (RuntimeException e) {
+            Log.w(TAG, "overBareScreen: " + e);
+        }
+        return false;
+    }
+
     /** The package of the app window under (x, y), or null over the keyboard, system UI or nothing. */
     String appAt(float x, float y) {
         try {

@@ -210,11 +210,21 @@
          "front:172:guide:com.vt.tv.tvcenter" makes the Hisense hengshan Live TV button open Live TV, then its guide,
          where the firmware hands KEYCODE_GUIDE (172) to the stock launcher and no app ever receives it. Leave empty
          to omit. -->
-    <!-- magic_pointer: apps where a Magic Remote press right of an x position (screen pixels, 1920 wide) is OK
-         instead of a touch, as "package:x". For players that open their menu on OK but ignore taps on the video,
-         while their menu, left of x, still takes taps: the IPTV channel list fills the left 720 px. -->
+    <!-- magic_pointer: apps where a Magic Remote press over bare video, right of an x position (screen pixels,
+         1920 wide; 0 for anywhere), is OK instead of a touch, as "package:x". For players that open their menu on
+         OK but ignore taps on the video. Over anything of an overlay (a button, text, the seek bar) the press stays
+         a touch, so the overlay and the IPTV channel list still take taps and drags. -->
     <string-array name="pointer_ok_zones" translatable="false">
-        <item>com.example.iptvplayer:820</item>
+        <item>com.example.iptvplayer:0</item>
+    </string-array>
+
+    <!-- magic_pointer: on-screen button rows of apps whose buttons ignore taps and follow only Left/Right and OK,
+         as "package|x,y,r;x,y,r;..." with each button's disc centre and radius (screen pixels, 1920 wide) in
+         Left/Right order. A press on one reads which disc is lit off the screen, walks there with Left/Right and
+         presses OK once the target is lit. The IPTV player's bottom bar: Info, Skupiny, Nastavenia, Zvuk, Predch.,
+         Pauza, Dalsia, Od zaciatku, Nazivo (measured 2026-11-16). -->
+    <string-array name="pointer_button_rows" translatable="false">
+        <item>com.example.iptvplayer|97,1001,26;176,1001,26;265,1001,26;355,1001,26;881,962,28;960,950,30;1039,962,28;1730,1001,26;1823,1001,26</item>
     </string-array>
 
     <string-array name="app_keys" translatable="false">
