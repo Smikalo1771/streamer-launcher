@@ -81,6 +81,14 @@ final class MagicPointer {
     private float navX, navY;
     private boolean centerDown;
     private long centerDownTime;
+    /**
+     * Edge scroll: the pointer resting this close to the left or right screen edge for EDGE_DWELL_MS scrolls the row
+     * under it that way, again every EDGE_REPEAT_MS while it stays.
+     */
+    private static final float EDGE = 40f;
+    private static final long EDGE_DWELL_MS = 250, EDGE_REPEAT_MS = 800;
+    private int edgeSide;
+    private long edgeSince, lastEdgeScroll;
     private static final float NAV_SLOP = 160f;   // the hand drifts ~100 px while scrolling and pressing the wheel
 
     MagicPointer(Context context) {
@@ -185,6 +193,7 @@ final class MagicPointer {
         lastX = mapX(b.getInt());
         lastY = mapY(b.getInt());
         if (touching) touch(MotionEvent.ACTION_MOVE, lastX, lastY);
+        else edgeScroll();
     }
 
     private void onMouse(JSONObject m) {
@@ -234,6 +243,20 @@ final class MagicPointer {
         } else if ("mouseup".equals(type) && touching) {
             touchUp();
         }
+    }
+
+    private void edgeScroll() {
+        long now = SystemClock.uptimeMillis();
+        int side = lastX >= screenW - EDGE ? 1 : lastX <= EDGE ? -1 : 0;
+        if (side != edgeSide) {
+            edgeSide = side;
+            edgeSince = now;
+            lastEdgeScroll = 0;
+        }
+        if (side == 0 || now - edgeSince < EDGE_DWELL_MS || now - lastEdgeScroll < EDGE_REPEAT_MS) return;
+        lastEdgeScroll = now;
+        PointerClick c = clicker;
+        if (c != null) c.scrollRowAt(lastY, side > 0);
     }
 
     private void touchUp() {

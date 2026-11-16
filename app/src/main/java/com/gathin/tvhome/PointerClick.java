@@ -73,6 +73,68 @@ final class PointerClick {
         return best;
     }
 
+    /**
+     * Scrolls the horizontal row at height y one step right (forward) or left, for the pointer resting at a screen
+     * edge: the row's own bounds usually end short of the edge, so only y is matched. A row is a scrollable node
+     * that offers a left/right scroll, or failing that one at least 2.5 times as wide as tall (so the page's own
+     * vertical list is left alone); the flattest such row under y wins.
+     */
+    boolean scrollRowAt(float y, boolean forward) {
+        if (android.os.Build.VERSION.SDK_INT >= 34) service.clearCache();
+        int py = (int) y;
+        try {
+            Rect r = new Rect();
+            for (AccessibilityWindowInfo w : service.getWindows()) {   // topmost first
+                w.getBoundsInScreen(r);
+                if (py < r.top || py >= r.bottom) continue;
+                if (w.getType() != AccessibilityWindowInfo.TYPE_APPLICATION) return false;
+                AccessibilityNodeInfo root = w.getRoot();
+                if (root == null) return false;
+                AccessibilityNodeInfo row = flattestRow(root, py);
+                if (row == null) return false;
+                AccessibilityNodeInfo.AccessibilityAction dir = forward
+                        ? AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_RIGHT
+                        : AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_LEFT;
+                boolean ok = row.getActionList().contains(dir) ? row.performAction(dir.getId())
+                        : row.performAction(forward ? AccessibilityNodeInfo.ACTION_SCROLL_FORWARD
+                                : AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD);
+                row.getBoundsInScreen(r);
+                Log.d(TAG, "scroll " + (forward ? "right " : "left ") + r.toShortString() + " -> " + ok);
+                return ok;
+            }
+        } catch (RuntimeException e) {
+            Log.w(TAG, "scroll: " + e);
+        }
+        return false;
+    }
+
+    private static AccessibilityNodeInfo flattestRow(AccessibilityNodeInfo root, int y) {
+        AccessibilityNodeInfo best = null;
+        int bestHeight = Integer.MAX_VALUE;
+        Rect r = new Rect();
+        ArrayDeque<AccessibilityNodeInfo> todo = new ArrayDeque<>();
+        todo.add(root);
+        while (!todo.isEmpty()) {
+            AccessibilityNodeInfo n = todo.poll();
+            n.getBoundsInScreen(r);
+            if (y < r.top || y >= r.bottom || !n.isVisibleToUser()) continue;
+            if (n.isScrollable() && r.height() < bestHeight) {
+                List<AccessibilityNodeInfo.AccessibilityAction> actions = n.getActionList();
+                boolean sideways = actions.contains(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_RIGHT)
+                        || actions.contains(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_LEFT);
+                if (sideways || r.width() >= 2.5f * r.height()) {
+                    best = n;
+                    bestHeight = r.height();
+                }
+            }
+            for (int i = 0; i < n.getChildCount(); i++) {
+                AccessibilityNodeInfo c = n.getChild(i);
+                if (c != null) todo.add(c);
+            }
+        }
+        return best;
+    }
+
     /** Clicks the node found at the press, or what is under (x, y) now if that one is gone. */
     boolean clickAt(AccessibilityNodeInfo node, float x, float y, boolean longPress) {
         if (node != null && press(node, longPress)) return true;
