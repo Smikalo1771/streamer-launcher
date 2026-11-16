@@ -47,6 +47,10 @@ while read -r ns key value; do
   sh_tv settings put "$ns" "$key" "$value"
 done < "$IN/settings.txt"
 echo "  nastavenia TV obnovené"
+if [ -s "$IN/cec.txt" ]; then
+  v=$(sed -n 's/.*= *//p' "$IN/cec.txt" | head -1)
+  [ -n "$v" ] && sh_tv cmd hdmi_control cec_setting set power_state_change_on_active_source_lost "$v" >/dev/null 2>&1     && echo "  HDMI-CEC: power_state_change_on_active_source_lost=$v"
+fi
 
 # 5. The debloat: disable what was disabled (the stock launcher last, after ours is Home).
 while read -r pkg; do

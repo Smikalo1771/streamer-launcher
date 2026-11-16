@@ -31,12 +31,21 @@ $A pull "$FILES/." "$(hostpath "$OUT/files")" >/dev/null 2>&1 && echo "  súbory
     echo "secure $k $(sh_tv settings get secure $k)"
   done
   echo "system screen_off_timeout $(sh_tv settings get system screen_off_timeout)"
+  # Sound and picture (2026-11-14), keyboards and animations (2026-11-15/16): restore.sh puts these back as they are.
+  for k in encoded_surround_output encoded_surround_output_enabled_formats window_animation_scale       transition_animation_scale animator_duration_scale; do
+    echo "global $k $(sh_tv settings get global $k)"
+  done
+  for k in match_content_frame_rate enabled_input_methods default_input_method; do
+    echo "secure $k $(sh_tv settings get secure $k)"
+  done
 } > "$OUT/settings.txt"
 # Home as package/class (resolve-activity prints the class as name= and the package as packageName=).
 sh_tv cmd package resolve-activity -c android.intent.category.HOME -a android.intent.action.MAIN \
   | awk -F= '/^ *name=/ && !c {c=$2} /^ *packageName=/ && !p {p=$2} END {if (c && p) print p "/" c}' \
   > "$OUT/home.txt" || true
 echo "  nastavenia TV: $(wc -l < "$OUT/settings.txt")"
+# HDMI-CEC setting the Magic Remote setup needs (magic4pc taking the TV's input must not put this player to sleep).
+sh_tv cmd hdmi_control cec_setting get power_state_change_on_active_source_lost > "$OUT/cec.txt" 2>/dev/null || true
 
 # 4. Apps: every user app with its installer, and every disabled package (the debloat).
 sh_tv pm list packages -3 -i | sed 's/^package://; s/  installer=/ /' | sort > "$OUT/apps.txt"
