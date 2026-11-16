@@ -265,6 +265,7 @@ public class HomeKeyService extends AccessibilityService {
             if (keyboardSwitch == null) keyboardSwitch = new KeyboardSwitch(this);
             magicPointer.keyboard = keyboardSwitch;
             magicPointer.clicker = new PointerClick(this);
+            magicPointer.keyHook = this::onMagicKey;
             magicPointer.start();
             if (magicAutoStart == null) magicAutoStart = new MagicAutoStart(this);
             magicAutoStart.start();
@@ -318,6 +319,22 @@ public class HomeKeyService extends AccessibilityService {
         for (int code : settingsScancodes) if (event.getScanCode() == code) return true;
         for (int code : settingsKeycodes) if (event.getKeyCode() == code) return true;
         return false;
+    }
+
+    /**
+     * magic_pointer: a Magic Remote key before MagicPointer injects it, from its thread. Injected keys never reach
+     * onKeyEvent, so they get the same handling here (app_keys, KeyboardSwitch, the switch-off countdown); true
+     * means consumed, not injected. Runs on the main thread like onKeyEvent, waiting at most half a second.
+     */
+    boolean onMagicKey(KeyEvent event) {
+        if (Looper.myLooper() == Looper.getMainLooper()) return onKeyEvent(event);
+        java.util.concurrent.FutureTask<Boolean> task = new java.util.concurrent.FutureTask<>(() -> onKeyEvent(event));
+        new Handler(Looper.getMainLooper()).post(task);
+        try {
+            return task.get(500, java.util.concurrent.TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     @Override

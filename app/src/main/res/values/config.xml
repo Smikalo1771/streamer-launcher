@@ -210,6 +210,13 @@
          "front:172:guide:com.vt.tv.tvcenter" makes the Hisense hengshan Live TV button open Live TV, then its guide,
          where the firmware hands KEYCODE_GUIDE (172) to the stock launcher and no app ever receives it. Leave empty
          to omit. -->
+    <!-- magic_pointer: apps where a Magic Remote press right of an x position (screen pixels, 1920 wide) is OK
+         instead of a touch, as "package:x". For players that open their menu on OK but ignore taps on the video,
+         while their menu, left of x, still takes taps: the IPTV channel list fills the left 720 px. -->
+    <string-array name="pointer_ok_zones" translatable="false">
+        <item>com.example.iptvplayer:820</item>
+    </string-array>
+
     <string-array name="app_keys" translatable="false">
         <item>190:com.google.android.youtube.tv</item>
         <item>191:com.nuvio.tv</item>

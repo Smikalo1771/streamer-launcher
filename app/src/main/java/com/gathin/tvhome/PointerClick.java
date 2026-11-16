@@ -40,12 +40,44 @@ final class PointerClick {
                 if (!r.contains(px, py)) continue;
                 if (w.getType() != AccessibilityWindowInfo.TYPE_APPLICATION) return null;   // keyboard, system UI
                 AccessibilityNodeInfo root = w.getRoot();
-                return root == null ? null : smallestClickable(root, px, py);
+                AccessibilityNodeInfo hit = root == null ? null : smallestClickable(root, px, py);
+                return hit == null || inWebView(hit) ? null : hit;
             }
         } catch (RuntimeException e) {
             Log.w(TAG, "nodeAt: " + e);
         }
         return null;
+    }
+
+    /** The package of the app window under (x, y), or null over the keyboard, system UI or nothing. */
+    String appAt(float x, float y) {
+        try {
+            Rect r = new Rect();
+            for (AccessibilityWindowInfo w : service.getWindows()) {   // topmost first
+                w.getBoundsInScreen(r);
+                if (!r.contains((int) x, (int) y)) continue;
+                if (w.getType() != AccessibilityWindowInfo.TYPE_APPLICATION) return null;
+                AccessibilityNodeInfo root = w.getRoot();
+                return root == null || root.getPackageName() == null ? null : root.getPackageName().toString();
+            }
+        } catch (RuntimeException e) {
+            Log.w(TAG, "appAt: " + e);
+        }
+        return null;
+    }
+
+    /**
+     * Web pages take real taps fine, but an accessibility click on one of their elements fires no handler the page
+     * listens to (the IPTV app's channel list ignored it), so items inside a WebView get the touch instead.
+     */
+    private static boolean inWebView(AccessibilityNodeInfo node) {
+        AccessibilityNodeInfo n = node;
+        for (int depth = 0; n != null && depth < 40; depth++) {
+            CharSequence cls = n.getClassName();
+            if (cls != null && "android.webkit.WebView".contentEquals(cls)) return true;
+            n = n.getParent();
+        }
+        return false;
     }
 
     private static AccessibilityNodeInfo smallestClickable(AccessibilityNodeInfo root, int x, int y) {

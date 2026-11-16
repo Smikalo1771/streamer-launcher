@@ -66,6 +66,11 @@ final class MagicPointer {
     private int repeatKey = -1, repeatCount;
     /** Picks Gboard or the touch keyboard (KeyboardSwitch); null when the service has none. */
     volatile KeyboardSwitch keyboard;
+    /**
+     * Sees each remote key before it is injected and returns true to consume it. Injected keys skip accessibility
+     * key filtering, so without this the service's app_keys (colour buttons) and KeyboardSwitch never saw them.
+     */
+    volatile java.util.function.Predicate<KeyEvent> keyHook;
     /** Presses clickable nodes through accessibility (PointerClick); null when the service has none. */
     volatile PointerClick clicker;
     /** The node under the current press, clicked on release; null when the press is a touch. */
@@ -89,10 +94,32 @@ final class MagicPointer {
     private static final long EDGE_DWELL_MS = 250, EDGE_REPEAT_MS = 800;
     private int edgeSide;
     private long edgeSince, lastEdgeScroll;
-    private static final float NAV_SLOP = 160f;   // the hand drifts ~100 px while scrolling and pressing the wheel
+    private static final float NAV_SLOP = 160f;
+    /**
+     * A held press drags by how far the pointer moved since it went down: the sensor stream and the press positions
+     * differ by an offset, so following the sensor stream as such made every press start with a jump, which apps
+     * (the IPTV WebView) took for a drag, not a tap. Moves within TAP_SLOP of the press are dropped for the same
+     * reason: hand tremor.
+     */
+    private static final float TAP_SLOP = 15f;
+    private float offX, offY, downX, downY, touchX, touchY;
+    private boolean dragging;
+    private float lastSensorX, lastSensorY;   // the hand drifts ~100 px while scrolling and pressing the wheel
+
+    /** pointer_ok_zones: package -> x right of which a press is OK, not a touch. */
+    private final java.util.Map<String, Integer> okZones = new java.util.HashMap<>();
 
     MagicPointer(Context context) {
         this.context = context.getApplicationContext();
+        for (String entry : this.context.getResources().getStringArray(R.array.pointer_ok_zones)) {
+            int colon = entry.lastIndexOf(':');
+            if (colon <= 0) continue;
+            try {
+                okZones.put(entry.substring(0, colon).trim(), Integer.parseInt(entry.substring(colon + 1).trim()));
+            } catch (NumberFormatException ignored) {
+                // a malformed entry is skipped
+            }
+        }
         Display d = this.context.getSystemService(DisplayManager.class).getDisplay(Display.DEFAULT_DISPLAY);
         Point size = new Point();
         d.getRealSize(size);
@@ -190,9 +217,9 @@ final class MagicPointer {
         if (payload.isEmpty()) return;
         ByteBuffer b = ByteBuffer.wrap(Base64.decode(payload, Base64.DEFAULT)).order(ByteOrder.LITTLE_ENDIAN);
         if (b.remaining() < 8) return;
-        lastX = mapX(b.getInt());
-        lastY = mapY(b.getInt());
-        if (touching) touch(MotionEvent.ACTION_MOVE, lastX, lastY);
+        lastX = lastSensorX = mapX(b.getInt());
+        lastY = lastSensorY = mapY(b.getInt());
+        if (touching) dragTo(lastX + offX, lastY + offY);
         else edgeScroll();
     }
 
@@ -204,7 +231,7 @@ final class MagicPointer {
         if (navigating && Math.hypot(x - navX, y - navY) > NAV_SLOP) navigating = false;
         if ("mousedown".equals(type)) {
             if (touching) touchUp();
-            if (navigating) {
+            if (navigating || inOkZone(x, y)) {
                 centerDown = true;
                 centerDownTime = SystemClock.uptimeMillis();
                 injectKey(new KeyEvent(centerDownTime, centerDownTime, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_CENTER,
@@ -222,6 +249,11 @@ final class MagicPointer {
             }
             touchDownTime = SystemClock.uptimeMillis();
             touching = true;
+            offX = x - lastSensorX;
+            offY = y - lastSensorY;
+            downX = touchX = x;
+            downY = touchY = y;
+            dragging = false;
             touch(MotionEvent.ACTION_DOWN, x, y);
         } else if ("mouseup".equals(type) && centerDown) {
             centerDown = false;
@@ -259,8 +291,16 @@ final class MagicPointer {
         if (c != null) c.scrollRowAt(lastY, side > 0);
     }
 
+    private void dragTo(float x, float y) {
+        if (!dragging && Math.hypot(x - downX, y - downY) < TAP_SLOP) return;
+        dragging = true;
+        touchX = x;
+        touchY = y;
+        touch(MotionEvent.ACTION_MOVE, x, y);
+    }
+
     private void touchUp() {
-        touch(MotionEvent.ACTION_UP, lastX, lastY);
+        touch(MotionEvent.ACTION_UP, touchX, touchY);
         touching = false;
     }
 
@@ -294,13 +334,26 @@ final class MagicPointer {
                 repeatCount = 0;
                 keyDownTime = now;
             }
-            injectKey(new KeyEvent(keyDownTime, now, KeyEvent.ACTION_DOWN, code, repeatCount, 0,
+            remoteKey(new KeyEvent(keyDownTime, now, KeyEvent.ACTION_DOWN, code, repeatCount, 0,
                     virtualKeyboard(), 0, 0, source));
         } else {
-            injectKey(new KeyEvent(keyDownTime, now, KeyEvent.ACTION_UP, code, 0, 0,
+            remoteKey(new KeyEvent(keyDownTime, now, KeyEvent.ACTION_UP, code, 0, 0,
                     virtualKeyboard(), 0, 0, source));
             repeatKey = -1;
         }
+    }
+
+    private void remoteKey(KeyEvent e) {
+        java.util.function.Predicate<KeyEvent> hook = keyHook;
+        if (hook != null && hook.test(e)) return;
+        injectKey(e);
+    }
+
+    private boolean inOkZone(float x, float y) {
+        PointerClick c = clicker;
+        if (okZones.isEmpty() || c == null) return false;
+        Integer from = okZones.get(c.appAt(x, y));
+        return from != null && x > from;
     }
 
     private void startNavigating(float x, float y) {
