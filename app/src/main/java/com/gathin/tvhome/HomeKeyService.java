@@ -112,6 +112,17 @@ public class HomeKeyService extends AccessibilityService {
         super.onServiceConnected();
         running = this;
         TvGuard.start();
+        // tvguard.sh turns HDMI-CEC off across its nightly restart and on again after it; should it not get to run
+        // after the boot (no Shizuku), CEC would stay off and the TV could no longer wake this player.
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            try {
+                if (Settings.Global.getInt(getContentResolver(), "hdmi_control_enabled", 1) == 0) {
+                    Settings.Global.putInt(getContentResolver(), "hdmi_control_enabled", 1);
+                }
+            } catch (SecurityException ignored) {
+                // no WRITE_SECURE_SETTINGS: nothing to do
+            }
+        }, 5 * 60_000L);
         settingsScancodes = getResources().getIntArray(R.array.settings_key_scancodes);
         // The service is directBootAware: Android 11 skips a service that is not while the user is still
         // locked at boot, writes accessibility_enabled=0 and, on TCL G03 firmware, never binds it after the

@@ -21,6 +21,28 @@ if [ "$(cat $D/tvguard.boot 2>/dev/null)" != "$B" ]; then
   log "boot: tvguard first run, up $(cut -d. -f1 /proc/uptime) s"
 fi
 
+# Nightly restart: clears the RAM and swap that build up over days of standby. Once a night between 04:00 and
+# 05:59, only in standby and after 3 h up. HDMI-CEC is off across the restart, or the boot would wake the TV at
+# 4 am; the first run after boot puts the Streamer back to standby, skips this boot's One Touch Play (so the morning
+# is like any other) and turns CEC on again. HomeKeyService turns CEC back on too, should this script not run.
+if [ -f $D/nightly.pending ]; then
+  rm -f $D/nightly.pending
+  echo "$B" > $D/hdmi.boot
+  awake && input keyevent KEYCODE_SLEEP
+  sleep 5
+  settings put global hdmi_control_enabled 1
+  log "nightly: back in standby after the restart, HDMI-CEC on again"
+fi
+h=$(date +%H)
+if { [ "$h" = 04 ] || [ "$h" = 05 ]; } && ! awake && [ "$(cut -d. -f1 /proc/uptime)" -gt 10800 ]     && [ "$(cat $D/nightly.last 2>/dev/null)" != "$(date +%Y-%m-%d)" ]; then
+  date +%Y-%m-%d > $D/nightly.last
+  touch $D/nightly.pending
+  log "nightly: restarting (up $(cut -d. -f1 /proc/uptime) s, $(grep SwapFree /proc/meminfo | tr -s ' '))"
+  settings put global hdmi_control_enabled 0
+  sleep 3
+  reboot
+fi
+
 # Remote buttons: HomeKeyService (YouTube, Netflix and star buttons, Home) must be on the accessibility list.
 # Android drops it after a force stop, and the launcher puts it back only when Home is created anew, so a dropped
 # helper could stay off for days. Only while the screen is on: with guard_off_in_standby the helper steps out on
