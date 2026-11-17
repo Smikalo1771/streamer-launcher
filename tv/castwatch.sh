@@ -25,6 +25,15 @@ if [ -n "$pid" ] && [ "$pid $B" = "$(cat $S 2>/dev/null)" ]; then
   listening || ! awake || { sleep 15; listening || ! awake; } && exit 0
 fi
 
+# At most 3 repairs per boot. Each one switches setupwraith on and off, and every such package change makes other
+# apps react: MiXplorer opens its window over whatever is in front, which stopped a film in Nuvio every 10 min while
+# the receiver would not come back (2026-11-17). Counted per boot in castwatch.tries as "<boot id> <count>".
+T=/data/local/tmp/castwatch.tries
+tries=$(sed -n "s/^$B //p" $T 2>/dev/null)
+tries=${tries:-0}
+[ "$tries" -ge 3 ] && exit 0
+echo "$B $((tries + 1))" > $T
+
 # Keep setupwraith enabled until the restarted receiver has really loaded its keys (it logs "Created singleton
 # instance of ClientAuthSigner"). Right after boot the set is so busy that the receiver can take well over 8 s to
 # come back; disabling setupwraith before that left it without keys until the next run, 10 min later.

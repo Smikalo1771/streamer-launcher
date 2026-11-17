@@ -71,6 +71,8 @@ public class HomeKeyService extends AccessibilityService {
     private MagicAutoStart magicAutoStart;
     /** magic_pointer: Gboard for arrow keys, the touch keyboard for the pointer; null when off. */
     private KeyboardSwitch keyboardSwitch;
+    /** Keeps the screen on while sound plays, for players that let the screen saver stop a film. */
+    private PlaybackAwake playbackAwake;
     /** Sleep timer and idle_off_minutes (PowerOff); null when neither can run. */
     private PowerOff powerOff;
     /** The key whose DOWN only cancelled a switch-off countdown: its UP is swallowed too. */
@@ -112,6 +114,8 @@ public class HomeKeyService extends AccessibilityService {
         super.onServiceConnected();
         running = this;
         TvGuard.start();
+        if (playbackAwake == null) playbackAwake = new PlaybackAwake(this);
+        playbackAwake.start();
         // tvguard.sh turns HDMI-CEC off across its nightly restart and on again after it; should it not get to run
         // after the boot (no Shizuku), CEC would stay off and the TV could no longer wake this player.
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
@@ -163,6 +167,7 @@ public class HomeKeyService extends AccessibilityService {
 
     @Override
     public void onDestroy() {
+        if (playbackAwake != null) playbackAwake.stop();
         if (running == this) running = null;
         RemoteKeys.release(this);
         stopWaitingForUnlock();
