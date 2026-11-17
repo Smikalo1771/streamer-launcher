@@ -17,6 +17,10 @@ listening() { grep -qiE '^ *[0-9]+: [0-9A-F]+:1F49 [0-9A-F]+:0000 0A ' /proc/net
 awake() { dumpsys power 2>/dev/null | grep -E 'mWakefulness=(Awake|Dreaming)' >/dev/null; }
 
 pid=$(pidof $P)
+# In standby the receiver does not come back after a force-stop, so a repair there only fails and leaves it
+# stopped (after the nightly restart it failed every 10 min all morning). Repair only while awake; the next run
+# after the TV wakes the player does it.
+awake || exit 0
 if [ -n "$pid" ] && [ "$pid $B" = "$(cat $S 2>/dev/null)" ]; then
   listening || ! awake || { sleep 15; listening || ! awake; } && exit 0
 fi
