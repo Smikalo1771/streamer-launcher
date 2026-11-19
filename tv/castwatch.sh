@@ -21,6 +21,9 @@ pid=$(pidof $P)
 # stopped (after the nightly restart it failed every 10 min all morning). Repair only while awake; the next run
 # after the TV wakes the player does it.
 awake || exit 0
+# The Streamer has no clock battery: it boots at its build date (2026-04-14) and gets the time from the network
+# about 2 min later. A receiver that starts on the wrong date gets no keys, so wait for the network time first.
+dumpsys time_detector 2>/dev/null | grep -q 'Set system clock.*origin=network' || exit 0
 if [ -n "$pid" ] && [ "$pid $B" = "$(cat $S 2>/dev/null)" ]; then
   listening || ! awake || { sleep 15; listening || ! awake; } && exit 0
 fi
@@ -34,11 +37,15 @@ tries=${tries:-0}
 [ "$tries" -ge 3 ] && exit 0
 echo "$B $((tries + 1))" > $T
 
+# Since the receiver's update of 2026-11-17 (3.74) a force-stopped receiver is never started again: only its
+# BOOT_COMPLETED / MY_PACKAGE_REPLACED receiver starts the cast server, and the shell cannot send either. Installing
+# its own APK over itself again (same version, data kept) sends MY_PACKAGE_REPLACED, which starts it fresh.
 # Keep setupwraith enabled until the restarted receiver has really loaded its keys (it logs "Created singleton
 # instance of ClientAuthSigner"). Right after boot the set is so busy that the receiver can take well over 8 s to
 # come back; disabling setupwraith before that left it without keys until the next run, 10 min later.
-am force-stop $P
 pm enable --user 0 $W >/dev/null
+cp "$(pm path $P | sed -n 's/^package://p' | head -1)" /data/local/tmp/ms.apk && pm install -r /data/local/tmp/ms.apk >/dev/null
+rm -f /data/local/tmp/ms.apk
 pid=""
 signed=""
 i=0
@@ -49,6 +56,7 @@ while [ $i -lt 30 ]; do
   [ -n "$pid" ] || continue
   if logcat -d --pid="$pid" 2>/dev/null | grep -q 'ClientAuthSigner'; then signed=1; break; fi
 done
+sleep 5   # let it finish its start-up with setupwraith still there
 pm disable-user --user 0 $W >/dev/null
 if [ -n "$signed" ]; then
   echo "$pid $B" > $S
