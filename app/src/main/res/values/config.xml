@@ -263,6 +263,9 @@
     <!-- Show the Solar Hijri (Shamsi) date used in Iran and Afghanistan, e.g. "27 Mehr 1405", above the
          Gregorian date. -->
     <bool name="shamsi_date">false</bool>
+    <!-- Home's date in Slovak with today's name day ("PIATOK 20. NOVEMBRA  ·  MENINY: FÉLIX", SlovakDay), whatever the
+         TV's language; this Streamer's system is Czech (2026-11-20). -->
+    <bool name="slovak_date">true</bool>
     <!-- Lunisolar (Vietnamese / Chinese / Korean) date under the date; config.json lunar_date, lunar_utc_offset (7, 8 or 9, default by locale). -->
     <bool name="lunar_date">false</bool>
     <!-- The date (with the Shamsi and lunar lines) on its own line under the clock instead of beside it, for a top bar

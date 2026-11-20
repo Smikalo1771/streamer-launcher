@@ -203,6 +203,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** The pills have been filled in once; later resumes refresh them after the first frame. */
     private boolean pillsShown;
     private TextView shamsiDate;
+    /** slovak_date: Home's date line in Slovak with today's name day (SlovakDay); null when off. */
+    private android.widget.TextClock slovakDate;
+    private LocalDate slovakDay;
     /** lunar_date: the lunisolar date under the date line, and the time zone it is computed for. */
     private TextView lunarDate;
     private boolean lunar;
@@ -567,6 +570,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (lunar) lunarDate.setVisibility(View.VISIBLE);
         greetingName = cfg.greetingName;
         if (cfg.dateBelowClock) moveDateBelowClock();
+        slovakDate = getResources().getBoolean(R.bool.slovak_date) ? findViewById(R.id.date) : null;
         if (shamsi) {
             shamsiDate.setVisibility(View.VISIBLE);
             TextView date = findViewById(R.id.date);
@@ -2704,7 +2708,26 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             greeting.setTextColor(greetingColor);
         }
         if (shamsi) shamsiDate.setText(Shamsi.today(getResources()));
+        updateSlovakDate();
         if (lunar) lunarDate.setText(Lunar.today(getResources(), lunarOffset));
+    }
+
+    /**
+     * slovak_date: the date TextClock shows a fixed text, "piatok 20. novembra  ·  meniny: Félix", as a quoted
+     * pattern (a TextClock rewrites any setText on its next tick). Set again when the day changes; this runs with
+     * the greeting every minute and on each return to Home.
+     */
+    private void updateSlovakDate() {
+        if (slovakDate == null) return;
+        LocalDate today = LocalDate.now();
+        if (today.equals(slovakDay)) return;
+        slovakDay = today;
+        String text = SlovakDay.date(today);
+        String names = SlovakDay.nameDay(today);
+        if (!names.isEmpty()) text += "  ·  meniny: " + names;
+        String pattern = "'" + text.replace("'", "''") + "'";
+        slovakDate.setFormat12Hour(pattern);
+        slovakDate.setFormat24Hour(pattern);
     }
 
     // ---- race-weekend panel (a theme's race_calendar) -----------------------------------------------
