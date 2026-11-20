@@ -203,6 +203,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** The pills have been filled in once; later resumes refresh them after the first frame. */
     private boolean pillsShown;
     private TextView shamsiDate;
+    /** starfall: stars falling behind Home after dark; null when off. */
+    private StarfallView starfall;
     /** slovak_date: Home's date line in Slovak with today's name day (SlovakDay); null when off. */
     private android.widget.TextClock slovakDate;
     private LocalDate slovakDay;
@@ -436,6 +438,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // signal level, so only it needs this minute's binder calls (about 7 ms on the UI thread).
             if (festive) updateWifiLabel();
             sky.update();
+            if (starfall != null) starfall.update();
             wallpaperPlayer.update();
             handler.postDelayed(this, MINUTE_MS);
         }
@@ -495,6 +498,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         getWindow().setBackgroundDrawable(null);
         wallpaperPlayer = new WallpaperPlayer(this, root, cfg);
         sky = findViewById(R.id.sky);
+        starfall = getResources().getBoolean(R.bool.starfall) && !cfg.reducedMotion
+                ? findViewById(R.id.starfall) : null;
         sky.setIntensity(cfg.skyIntensity);
         glass = findViewById(R.id.glass);
         glass.setStyle(cfg.glassStyle);
@@ -1135,6 +1140,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (showStats) startStats();
         if (gameDay != null) gameDay.start();
         sky.update();
+        if (starfall != null) starfall.update();
         wallpaperPlayer.start();
         handler.postDelayed(minuteTick, MINUTE_MS);
         if (festive && diya != null) {
@@ -1307,6 +1313,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         endReorder();   // Home or another app while reordering keeps the order so far
         if (gtvHome != null) gtvHome.endMove();   // the same for an app or row being moved
         wallpaperPlayer.stop();
+        if (starfall != null) starfall.stop();
         stopAmbientAnimation();
         hero.animate().cancel();
         ambient.animate().cancel();
