@@ -489,8 +489,18 @@
     <!-- Where the TV is, in decimal degrees, so the sky's sunrise and sunset glows follow the real sun
          (computed on the TV, no network). Empty: a fixed temperate day, sunset glow around 19:00.
          Vilnius: 54.69 and 25.28. -->
-    <string name="latitude" translatable="false">48.7</string>
-    <string name="longitude" translatable="false">19.1</string>
+    <string name="latitude" translatable="false">48.525</string>
+    <string name="longitude" translatable="false">18.057</string>
+    <!-- A moving weather scene behind Home, like YoWindow (WeatherView): sky by the time of day, sun or moon, clouds
+         drifting with the wind, rain, snow, fog or a storm over hills with a village, for latitude/longitude above
+         (Horne Stitare). The weather comes from Open-Meteo every 15 min while Home is in front. With reduced_motion
+         it stands still. -->
+    <bool name="weather_scene">true</bool>
+    <!-- Colour of the Slovak date and name-day line (slovak_date), drawn with a soft dark shadow so it reads over the
+         weather scene at any hour. #00000000 keeps the theme's dimmed white. -->
+    <color name="slovak_date_color">#FFFFE2A0</color>
+    <!-- How much the scene is darkened so the white text keeps its contrast, 0 to 90 %. -->
+    <integer name="weather_dim">25</integer>
 
     <!-- Cinematic top shelf: the focused dock app's artwork, softened, fills the top of the screen in its
          colour; the shelf gets a larger name, a "Last opened" line (from the apps Home opened) and dock position

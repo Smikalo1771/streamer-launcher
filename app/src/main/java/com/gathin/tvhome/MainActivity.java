@@ -205,9 +205,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private TextView shamsiDate;
     /** starfall: stars falling behind Home after dark; null when off. */
     private StarfallView starfall;
+    /** weather_scene: the moving weather backdrop; null when off. */
+    private WeatherView weather;
     /** slovak_date: Home's date line in Slovak with today's name day (SlovakDay); null when off. */
     private android.widget.TextClock slovakDate;
-    private LocalDate slovakDay;
+    private String slovakDateText;
     /** lunar_date: the lunisolar date under the date line, and the time zone it is computed for. */
     private TextView lunarDate;
     private boolean lunar;
@@ -429,6 +431,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             updateClockVisibility();
         }
     };
+    /** Weather scene and falling stars: the stars only fall while the sky is clear enough to see them. */
+    private void updateWeatherScene() {
+        if (weather != null) weather.update();
+        if (starfall == null) return;
+        if (weather == null || weather.starsVisible()) starfall.update();
+        else starfall.stop();
+    }
+
     private final Runnable minuteTick = new Runnable() {
         @Override
         public void run() {
@@ -438,7 +448,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // signal level, so only it needs this minute's binder calls (about 7 ms on the UI thread).
             if (festive) updateWifiLabel();
             sky.update();
-            if (starfall != null) starfall.update();
+            updateWeatherScene();
             wallpaperPlayer.update();
             handler.postDelayed(this, MINUTE_MS);
         }
@@ -500,6 +510,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         sky = findViewById(R.id.sky);
         starfall = getResources().getBoolean(R.bool.starfall) && !cfg.reducedMotion
                 ? findViewById(R.id.starfall) : null;
+        weather = findViewById(R.id.weather);
+        if (getResources().getBoolean(R.bool.weather_scene)) {
+            weather.setMotion(!cfg.reducedMotion);
+            weather.setOnWeather(this::updateSlovakDate);
+        } else {
+            weather.setVisibility(View.GONE);
+            weather = null;
+        }
         sky.setIntensity(cfg.skyIntensity);
         glass = findViewById(R.id.glass);
         glass.setStyle(cfg.glassStyle);
@@ -576,6 +594,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         greetingName = cfg.greetingName;
         if (cfg.dateBelowClock) moveDateBelowClock();
         slovakDate = getResources().getBoolean(R.bool.slovak_date) ? findViewById(R.id.date) : null;
+        if (slovakDate != null) {
+            // Warm gold with a soft dark halo, so the line reads over any sky of the weather scene: white clouds,
+            // an orange dusk or night (config.xml slovak_date_color; 0 keeps the theme's colour).
+            int c = getResources().getColor(R.color.slovak_date_color, getTheme());
+            if (c != 0) {
+                slovakDate.setTextColor(c);
+                slovakDate.setShadowLayer(6f * density, 0f, 1.5f * density, 0xD0000000);
+            }
+        }
         if (shamsi) {
             shamsiDate.setVisibility(View.VISIBLE);
             TextView date = findViewById(R.id.date);
@@ -1140,7 +1167,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (showStats) startStats();
         if (gameDay != null) gameDay.start();
         sky.update();
-        if (starfall != null) starfall.update();
+        updateWeatherScene();
         wallpaperPlayer.start();
         handler.postDelayed(minuteTick, MINUTE_MS);
         if (festive && diya != null) {
@@ -1314,6 +1341,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (gtvHome != null) gtvHome.endMove();   // the same for an app or row being moved
         wallpaperPlayer.stop();
         if (starfall != null) starfall.stop();
+        if (weather != null) weather.stop();
         stopAmbientAnimation();
         hero.animate().cancel();
         ambient.animate().cancel();
@@ -2721,17 +2749,20 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     /**
      * slovak_date: the date TextClock shows a fixed text, "piatok 20. novembra  ·  meniny: Félix", as a quoted
-     * pattern (a TextClock rewrites any setText on its next tick). Set again when the day changes; this runs with
-     * the greeting every minute and on each return to Home.
+     * pattern (a TextClock rewrites any setText on its next tick). With weather_scene the current temperature follows
+     * ("  ·  8 °C"). Set again when the text changes; this runs with the greeting every minute, on each return to
+     * Home and when new weather arrives.
      */
     private void updateSlovakDate() {
         if (slovakDate == null) return;
         LocalDate today = LocalDate.now();
-        if (today.equals(slovakDay)) return;
-        slovakDay = today;
         String text = SlovakDay.date(today);
         String names = SlovakDay.nameDay(today);
         if (!names.isEmpty()) text += "  ·  meniny: " + names;
+        String temp = weather != null ? weather.temperature() : "";
+        if (!temp.isEmpty()) text += "  ·  " + temp;
+        if (text.equals(slovakDateText)) return;
+        slovakDateText = text;
         String pattern = "'" + text.replace("'", "''") + "'";
         slovakDate.setFormat12Hour(pattern);
         slovakDate.setFormat24Hour(pattern);
