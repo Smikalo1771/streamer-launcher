@@ -354,53 +354,10 @@ final class MagicPointer {
         injectKey(new KeyEvent(now, now, KeyEvent.ACTION_UP, code, 0, 0, virtualKeyboard(), 0, 0, InputDevice.SOURCE_DPAD));
     }
 
-    /** Back held this long is Home (2026-11-26): the LG remote's own Home button never reaches magic4pc. */
-    private static final long BACK_HOLD_MS = 600;
-    private final android.os.Handler keyHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-    private boolean backHeld;
-    private boolean backWasHome;
-    private final Runnable backToHome = () -> {
-        if (!backHeld) return;
-        backWasHome = true;
-        long t = SystemClock.uptimeMillis();
-        remoteKey(new KeyEvent(t, t, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_HOME, 0, 0, virtualKeyboard(), 0, 0,
-                InputDevice.SOURCE_KEYBOARD));
-        remoteKey(new KeyEvent(t, t + 50, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_HOME, 0, 0, virtualKeyboard(), 0, 0,
-                InputDevice.SOURCE_KEYBOARD));
-        Log.d(TAG, "back held: home");
-    };
-
-    /**
-     * Back is sent on release, not on press: a short press is Back, one held BACK_HOLD_MS is Home. The webOS
-     * remote's key repeats while Back is held are dropped.
-     */
-    private void onBack(boolean down) {
-        if (down) {
-            if (backHeld) return;
-            backHeld = true;
-            backWasHome = false;
-            keyHandler.postDelayed(backToHome, BACK_HOLD_MS);
-            return;
-        }
-        if (!backHeld) return;
-        backHeld = false;
-        keyHandler.removeCallbacks(backToHome);
-        if (backWasHome) return;
-        long t = SystemClock.uptimeMillis();
-        remoteKey(new KeyEvent(t, t, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_BACK, 0, 0, virtualKeyboard(), 0, 0,
-                InputDevice.SOURCE_KEYBOARD));
-        remoteKey(new KeyEvent(t, t + 50, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK, 0, 0, virtualKeyboard(), 0, 0,
-                InputDevice.SOURCE_KEYBOARD));
-    }
-
     private void onKey(JSONObject k) {
         int code = androidKey(k.optInt("keyCode"));
         if (code == KeyEvent.KEYCODE_UNKNOWN) return;
         boolean down = k.optBoolean("isDown");
-        if (code == KeyEvent.KEYCODE_BACK) {
-            keyHandler.post(() -> onBack(down));
-            return;
-        }
         long now = SystemClock.uptimeMillis();
         int source = isDpad(code) ? InputDevice.SOURCE_DPAD : InputDevice.SOURCE_KEYBOARD;
         if (down) {

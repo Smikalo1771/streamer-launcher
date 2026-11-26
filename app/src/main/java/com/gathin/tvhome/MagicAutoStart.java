@@ -42,6 +42,17 @@ final class MagicAutoStart {
     private volatile Socket socket;
     private Thread thread;
     private final SecureRandom random = new SecureRandom();
+    /**
+     * Run when the TV closed magic4pc and fell back to the plain HDMI input: that is the Magic Remote's Back held
+     * down, which webOS keeps for itself (it never reaches magic4pc). HomeKeyService makes it the player's Home
+     * (2026-11-26), since the remote's own Home button opens the TV's menu.
+     */
+    volatile Runnable onBackHeld;
+    /** The TV's app in front and since when (uptime ms), to tell magic4pc being closed from its start-up. */
+    private String lastApp = "";
+    private long lastAppSince;
+    /** magic4pc must have been in front this long before its closing counts as Back held. */
+    private static final long SETTLED_MS = 4000;
 
     MagicAutoStart(Context context) {
         this.context = context.getApplicationContext();
@@ -116,7 +127,17 @@ final class MagicAutoStart {
             } else if ("fg".equals(msg.optString("id"))) {
                 String app = msg.optJSONObject("payload") == null ? "" : msg.getJSONObject("payload").optString("appId");
                 long now = SystemClock.uptimeMillis();
-                if (hdmiApp.equals(app) && now - lastLaunch > LAUNCH_GAP_MS) {
+                boolean backHeld = APP.equals(lastApp) && hdmiApp.equals(app) && now - lastAppSince > SETTLED_MS;
+                if (!app.equals(lastApp)) {
+                    lastApp = app;
+                    lastAppSince = now;
+                }
+                if (backHeld) {
+                    Log.i(TAG, "magic4pc closed by the TV (Back held): Home");
+                    Runnable r = onBackHeld;
+                    if (r != null) r.run();
+                }
+                if (hdmiApp.equals(app) && (backHeld || now - lastLaunch > LAUNCH_GAP_MS)) {
                     lastLaunch = now;
                     Log.i(TAG, "TV on " + app + ": opening " + APP);
                     sendText(out, "{\"type\":\"request\",\"id\":\"launch" + (n++) + "\",\"uri\":"

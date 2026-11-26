@@ -284,6 +284,8 @@ public class HomeKeyService extends AccessibilityService {
             magicPointer.keyHook = this::onMagicKey;
             magicPointer.start();
             if (magicAutoStart == null) magicAutoStart = new MagicAutoStart(this);
+            magicAutoStart.onBackHeld = () -> new Handler(Looper.getMainLooper())
+                    .post(() -> performGlobalAction(GLOBAL_ACTION_HOME));
             magicAutoStart.start();
             DevModeKeeper.start(this);   // keeps the TV's Developer Mode (and so magic4pc) from expiring
         }
