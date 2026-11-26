@@ -127,8 +127,11 @@ final class MagicAutoStart {
             } else if ("fg".equals(msg.optString("id"))) {
                 String app = msg.optJSONObject("payload") == null ? "" : msg.getJSONObject("payload").optString("appId");
                 long now = SystemClock.uptimeMillis();
+                // While webOS closes an app it reports an empty one in between: that is not a change of app.
+                if (app.isEmpty()) continue;
                 boolean backHeld = APP.equals(lastApp) && hdmiApp.equals(app) && now - lastAppSince > SETTLED_MS;
                 if (!app.equals(lastApp)) {
+                    Log.d(TAG, "TV app: " + lastApp + " -> " + app);
                     lastApp = app;
                     lastAppSince = now;
                 }
